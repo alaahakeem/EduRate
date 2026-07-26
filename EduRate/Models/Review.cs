@@ -3,7 +3,6 @@
     public class Review
     {
         public int Id { get; set; }
-        public string StudentName { get; set; }
         public int Rating { get; set; }
         public string Comment { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
@@ -12,5 +11,9 @@
 
         public int TeacherId { get; set; }
         public Teacher Teacher { get; set; } //child
+
+        // ربط التقييم بالطالب
+        public int StudentId { get; set; }
+        public Student Student { get; set; }
     }
 }

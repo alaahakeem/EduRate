@@ -4,6 +4,7 @@ using EduRate.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EduRate.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260726001223_AddAllModels")]
+    partial class AddAllModels
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -54,7 +57,7 @@ namespace EduRate.Migrations
                         new
                         {
                             Id = 1,
-                            BookingDate = new DateTime(2026, 7, 23, 3, 15, 58, 561, DateTimeKind.Local).AddTicks(6779),
+                            BookingDate = new DateTime(2026, 7, 23, 3, 12, 23, 335, DateTimeKind.Local).AddTicks(9419),
                             IsAttended = true,
                             StudentId = 1,
                             TeacherId = 1
@@ -62,7 +65,7 @@ namespace EduRate.Migrations
                         new
                         {
                             Id = 2,
-                            BookingDate = new DateTime(2026, 7, 25, 3, 15, 58, 561, DateTimeKind.Local).AddTicks(6785),
+                            BookingDate = new DateTime(2026, 7, 25, 3, 12, 23, 335, DateTimeKind.Local).AddTicks(9424),
                             IsAttended = false,
                             StudentId = 2,
                             TeacherId = 2
@@ -168,7 +171,7 @@ namespace EduRate.Migrations
                             Content = "يا مستر ممكن تشرح الجزء الأخير تاني؟",
                             IsRead = true,
                             SenderRole = "Student",
-                            SentAt = new DateTime(2026, 7, 25, 22, 15, 58, 561, DateTimeKind.Local).AddTicks(6830),
+                            SentAt = new DateTime(2026, 7, 25, 22, 12, 23, 335, DateTimeKind.Local).AddTicks(9466),
                             StudentId = 1,
                             TeacherId = 1
                         },
@@ -178,7 +181,7 @@ namespace EduRate.Migrations
                             Content = "أكيد، راجع الفيديو اللي نزلته وهتفهمه.",
                             IsRead = false,
                             SenderRole = "Teacher",
-                            SentAt = new DateTime(2026, 7, 25, 23, 15, 58, 561, DateTimeKind.Local).AddTicks(6834),
+                            SentAt = new DateTime(2026, 7, 25, 23, 12, 23, 335, DateTimeKind.Local).AddTicks(9470),
                             StudentId = 1,
                             TeacherId = 1
                         });
@@ -228,7 +231,7 @@ namespace EduRate.Migrations
                         {
                             Id = 1,
                             Comment = "Excellent explanation!",
-                            CreatedAt = new DateTime(2026, 7, 24, 3, 15, 58, 561, DateTimeKind.Local).AddTicks(6803),
+                            CreatedAt = new DateTime(2026, 7, 24, 3, 12, 23, 335, DateTimeKind.Local).AddTicks(9443),
                             IPAddress = "192.168.1.1",
                             IsVerified = true,
                             Rating = 5,
@@ -239,7 +242,7 @@ namespace EduRate.Migrations
                         {
                             Id = 2,
                             Comment = "Very good.",
-                            CreatedAt = new DateTime(2026, 7, 25, 3, 15, 58, 561, DateTimeKind.Local).AddTicks(6808),
+                            CreatedAt = new DateTime(2026, 7, 25, 3, 12, 23, 335, DateTimeKind.Local).AddTicks(9447),
                             IPAddress = "192.168.1.5",
                             IsVerified = true,
                             Rating = 4,
@@ -377,8 +380,7 @@ namespace EduRate.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("ProfitPercentage")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("TeacherId", "CenterId");
 
@@ -392,7 +394,7 @@ namespace EduRate.Migrations
                             TeacherId = 1,
                             CenterId = 1,
                             IsActive = true,
-                            JoinDate = new DateTime(2026, 1, 26, 3, 15, 58, 561, DateTimeKind.Local).AddTicks(6727),
+                            JoinDate = new DateTime(2026, 1, 26, 3, 12, 23, 335, DateTimeKind.Local).AddTicks(9362),
                             ProfitPercentage = 70.5m
                         },
                         new
@@ -400,7 +402,7 @@ namespace EduRate.Migrations
                             TeacherId = 1,
                             CenterId = 2,
                             IsActive = true,
-                            JoinDate = new DateTime(2026, 5, 26, 3, 15, 58, 561, DateTimeKind.Local).AddTicks(6735),
+                            JoinDate = new DateTime(2026, 5, 26, 3, 12, 23, 335, DateTimeKind.Local).AddTicks(9371),
                             ProfitPercentage = 60.0m
                         },
                         new
@@ -408,7 +410,7 @@ namespace EduRate.Migrations
                             TeacherId = 2,
                             CenterId = 1,
                             IsActive = false,
-                            JoinDate = new DateTime(2025, 7, 26, 3, 15, 58, 561, DateTimeKind.Local).AddTicks(6739),
+                            JoinDate = new DateTime(2025, 7, 26, 3, 12, 23, 335, DateTimeKind.Local).AddTicks(9375),
                             ProfitPercentage = 80.0m
                         });
                 });
