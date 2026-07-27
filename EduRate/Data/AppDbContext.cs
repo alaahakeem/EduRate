@@ -14,6 +14,8 @@ namespace EduRate.Data
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<Center> Centers { get; set; }
         public DbSet<Message> Messages { get; set; }
+        public DbSet<Session> Sessions { get; set; }
+        public DbSet<CenterImage> CenterImages { get; set; }
         public DbSet<TeacherCenter> TeacherCenters { get; set; } // الجدول الوسيط
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

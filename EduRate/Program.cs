@@ -32,6 +32,8 @@ namespace EduRate
 
             app.UseHttpsRedirection();
 
+            app.UseStaticFiles();
+
             app.UseAuthorization();
 
             app.MapControllers();

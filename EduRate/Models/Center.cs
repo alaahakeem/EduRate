@@ -1,4 +1,6 @@
-﻿namespace EduRate.Models
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace EduRate.Models
 {
     public class Center
     {
@@ -14,5 +16,9 @@
 
         // العلاقة مع جدول الوسيط (TeacherCenter)
         public ICollection<TeacherCenter> TeacherCenters { get; set; }
+        
+        public ICollection<Review> CenterReviews { get; set; }
+        public ICollection<Booking> Bookings { get; set; }
+        public ICollection<CenterImage> CenterImagesBookings { get; set; }
     }
-}
+    }

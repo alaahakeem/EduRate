@@ -14,5 +14,7 @@
 
         public int TeacherId { get; set; }
         public Teacher Teacher { get; set; }
+        public int CenterId { get; set; }
+        public Center Center { get; set; } // Navigation Property
     }
 }

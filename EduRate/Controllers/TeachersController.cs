@@ -25,13 +25,14 @@ namespace EduRate.Controllers
         {
             var teachers = await _context.Teachers
                 .OrderByDescending(t => t.AverageRating)
-                .Select(static t => new TeacherReadDto
+                .Select(t => new TeacherReadDto
                 {
                     Id = t.Id,
                     Name = t.Name,
                     Subject = t.Subject,
                     Bio = t.Bio,
                     YearsOfExperience = t.YearsOfExperience,
+                    DemoVideoUrl = t.DemoVideoUrl, // تم الإضافة
                     TrustScore = t.TrustScore,
                     AverageRating = t.AverageRating,
                     TotalReviews = t.TotalReviews
@@ -56,6 +57,7 @@ namespace EduRate.Controllers
                     Subject = t.Subject,
                     Bio = t.Bio,
                     YearsOfExperience = t.YearsOfExperience,
+                    DemoVideoUrl = t.DemoVideoUrl, // تم الإضافة
                     TrustScore = t.TrustScore,
                     AverageRating = t.AverageRating,
                     TotalReviews = t.TotalReviews
@@ -79,6 +81,7 @@ namespace EduRate.Controllers
                 Subject = dto.Subject,
                 Bio = dto.Bio,
                 YearsOfExperience = dto.YearsOfExperience,
+                DemoVideoUrl = dto.DemoVideoUrl, // تم الإضافة
                 TrustScore = 100,
                 AverageRating = 0,
                 TotalReviews = 0
@@ -94,6 +97,7 @@ namespace EduRate.Controllers
                 Subject = newTeacher.Subject,
                 Bio = newTeacher.Bio,
                 YearsOfExperience = newTeacher.YearsOfExperience,
+                DemoVideoUrl = newTeacher.DemoVideoUrl, // تم الإضافة
                 TrustScore = newTeacher.TrustScore,
                 AverageRating = newTeacher.AverageRating,
                 TotalReviews = newTeacher.TotalReviews
@@ -115,6 +119,7 @@ namespace EduRate.Controllers
             teacher.Subject = dto.Subject;
             teacher.Bio = dto.Bio;
             teacher.YearsOfExperience = dto.YearsOfExperience;
+            teacher.DemoVideoUrl = dto.DemoVideoUrl; // تم الإضافة
 
             await _context.SaveChangesAsync();
 
@@ -159,6 +164,7 @@ namespace EduRate.Controllers
                     Subject = t.Subject,
                     Bio = t.Bio,
                     YearsOfExperience = t.YearsOfExperience,
+                    DemoVideoUrl = t.DemoVideoUrl, // تم الإضافة
                     TrustScore = t.TrustScore,
                     AverageRating = t.AverageRating,
                     TotalReviews = t.TotalReviews
@@ -280,7 +286,7 @@ namespace EduRate.Controllers
             if (!teacherExists) return NotFound(new { message = "المدرس غير موجود" });
 
             var messages = await _context.Messages
-                .Where(m => m.TeacherId == id) // أو حسب تصميم جدول الرسايل عندك
+                .Where(m => m.TeacherId == id)
                 .OrderByDescending(m => m.SentAt)
                 .Select(m => new TeacherMessageDto
                 {

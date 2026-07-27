@@ -15,5 +15,7 @@
         // ربط التقييم بالطالب
         public int StudentId { get; set; }
         public Student Student { get; set; }
+        public int CenterId { get; set; }
+        public Center Center { get; set; } // (Navigation Property)
     }
 }
