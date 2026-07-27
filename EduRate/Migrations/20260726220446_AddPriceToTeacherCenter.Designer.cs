@@ -4,6 +4,7 @@ using EduRate.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EduRate.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260726220446_AddPriceToTeacherCenter")]
+    partial class AddPriceToTeacherCenter
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -49,6 +52,24 @@ namespace EduRate.Migrations
                     b.HasIndex("TeacherId");
 
                     b.ToTable("Bookings");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            BookingDate = new DateTime(2026, 7, 24, 1, 4, 46, 520, DateTimeKind.Local).AddTicks(4081),
+                            IsAttended = true,
+                            StudentId = 1,
+                            TeacherId = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            BookingDate = new DateTime(2026, 7, 26, 1, 4, 46, 520, DateTimeKind.Local).AddTicks(4088),
+                            IsAttended = false,
+                            StudentId = 2,
+                            TeacherId = 2
+                        });
                 });
 
             modelBuilder.Entity("EduRate.Models.Center", b =>
@@ -83,6 +104,28 @@ namespace EduRate.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Centers");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Address = "شارع المحطة",
+                            Description = "قاعات مكيفة ومجهزة",
+                            IsVerified = true,
+                            Latitude = 30.0444,
+                            Longitude = 31.235700000000001,
+                            Name = "سنتر الأوائل"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Address = "وسط البلد",
+                            Description = "مراجعات نهائية مكثفة",
+                            IsVerified = false,
+                            Latitude = 30.033300000000001,
+                            Longitude = 31.2333,
+                            Name = "سنتر النخبة"
+                        });
                 });
 
             modelBuilder.Entity("EduRate.Models.Message", b =>
@@ -120,6 +163,28 @@ namespace EduRate.Migrations
                     b.HasIndex("TeacherId");
 
                     b.ToTable("Messages");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Content = "يا مستر ممكن تشرح الجزء الأخير تاني؟",
+                            IsRead = true,
+                            SenderRole = "Student",
+                            SentAt = new DateTime(2026, 7, 26, 20, 4, 46, 520, DateTimeKind.Local).AddTicks(4146),
+                            StudentId = 1,
+                            TeacherId = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Content = "أكيد، راجع الفيديو اللي نزلته وهتفهمه.",
+                            IsRead = false,
+                            SenderRole = "Teacher",
+                            SentAt = new DateTime(2026, 7, 26, 21, 4, 46, 520, DateTimeKind.Local).AddTicks(4151),
+                            StudentId = 1,
+                            TeacherId = 1
+                        });
                 });
 
             modelBuilder.Entity("EduRate.Models.Review", b =>
@@ -160,6 +225,30 @@ namespace EduRate.Migrations
                     b.HasIndex("TeacherId");
 
                     b.ToTable("Reviews");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Comment = "Excellent explanation!",
+                            CreatedAt = new DateTime(2026, 7, 25, 1, 4, 46, 520, DateTimeKind.Local).AddTicks(4116),
+                            IPAddress = "192.168.1.1",
+                            IsVerified = true,
+                            Rating = 5,
+                            StudentId = 1,
+                            TeacherId = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Comment = "Very good.",
+                            CreatedAt = new DateTime(2026, 7, 26, 1, 4, 46, 520, DateTimeKind.Local).AddTicks(4122),
+                            IPAddress = "192.168.1.5",
+                            IsVerified = true,
+                            Rating = 4,
+                            StudentId = 2,
+                            TeacherId = 2
+                        });
                 });
 
             modelBuilder.Entity("EduRate.Models.Student", b =>
@@ -193,6 +282,26 @@ namespace EduRate.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Students");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            EducationalLevel = "Senior 2",
+                            Email = "ahmed@example.com",
+                            Governorate = "القاهرة",
+                            Name = "Ahmed Khaled",
+                            Region = "المعادي"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            EducationalLevel = "Senior 3",
+                            Email = "mona@example.com",
+                            Governorate = "الجيزة",
+                            Name = "Mona Sayed",
+                            Region = "الدقي"
+                        });
                 });
 
             modelBuilder.Entity("EduRate.Models.Teacher", b =>
@@ -230,6 +339,30 @@ namespace EduRate.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Teachers");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            AverageRating = 4.5,
+                            Bio = "Expert in simplifying Physics concepts.",
+                            Name = "Mr. Mohammed Ahmed",
+                            Subject = "Physics",
+                            TotalReviews = 2,
+                            TrustScore = 95.0,
+                            YearsOfExperience = 10
+                        },
+                        new
+                        {
+                            Id = 2,
+                            AverageRating = 5.0,
+                            Bio = "Specialized in foundational English and grammar.",
+                            Name = "Mr. Mahmoud Ali",
+                            Subject = "English",
+                            TotalReviews = 1,
+                            TrustScore = 88.0,
+                            YearsOfExperience = 5
+                        });
                 });
 
             modelBuilder.Entity("EduRate.Models.TeacherCenter", b =>
@@ -258,6 +391,35 @@ namespace EduRate.Migrations
                     b.HasIndex("CenterId");
 
                     b.ToTable("TeacherCenters");
+
+                    b.HasData(
+                        new
+                        {
+                            TeacherId = 1,
+                            CenterId = 1,
+                            IsActive = true,
+                            JoinDate = new DateTime(2026, 1, 27, 1, 4, 46, 520, DateTimeKind.Local).AddTicks(4012),
+                            Price = 120.0m,
+                            ProfitPercentage = 70.5m
+                        },
+                        new
+                        {
+                            TeacherId = 1,
+                            CenterId = 2,
+                            IsActive = true,
+                            JoinDate = new DateTime(2026, 5, 27, 1, 4, 46, 520, DateTimeKind.Local).AddTicks(4023),
+                            Price = 150.0m,
+                            ProfitPercentage = 60.0m
+                        },
+                        new
+                        {
+                            TeacherId = 2,
+                            CenterId = 1,
+                            IsActive = false,
+                            JoinDate = new DateTime(2025, 7, 27, 1, 4, 46, 520, DateTimeKind.Local).AddTicks(4028),
+                            Price = 100.0m,
+                            ProfitPercentage = 80.0m
+                        });
                 });
 
             modelBuilder.Entity("EduRate.Models.Booking", b =>

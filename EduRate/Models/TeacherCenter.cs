@@ -13,5 +13,6 @@
         public DateTime JoinDate { get; set; } = DateTime.Now; // تاريخ الانضمام
         public decimal ProfitPercentage { get; set; } // نسبة المدرس من أرباح الحصة
         public bool IsActive { get; set; } = true; // هل لسه شغال في السنتر ده ولا سابهم؟
+        public decimal Price { get; set; }
     }
 }
