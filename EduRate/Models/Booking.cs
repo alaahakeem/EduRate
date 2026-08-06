@@ -1,29 +1,31 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EduRate.Models
 {
     public class Booking
     {
+        [Key]
         public int Id { get; set; }
+
         public DateTime BookingDate { get; set; } = DateTime.Now;
 
-        // دي الخاصية الأهم: هل السنتر أكد حضور الطالب؟
-        public bool IsAttended { get; set; }
+        // هل السنتر أكد حضور الطالب؟
+        public bool IsAttended { get; set; } = false;
 
         // حالة الحجز (Pending, Confirmed, Cancelled)
         public string Status { get; set; } = "Pending";
 
-        // العلاقات (Foreign Keys)
+        // ==========================================
+        // العلاقات: طالب وحصة بس (ومن الحصة هنعرف المدرس والسنتر)
+        // ==========================================
         public int StudentId { get; set; }
+        [ForeignKey("StudentId")]
         public Student Student { get; set; }
 
         public int SessionId { get; set; }
         [ForeignKey("SessionId")]
         public Session Session { get; set; }
-
-        public int TeacherId { get; set; }
-        public Teacher Teacher { get; set; }
-        public int CenterId { get; set; }
-        public Center Center { get; set; } // Navigation Property
     }
 }

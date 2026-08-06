@@ -328,7 +328,8 @@ namespace EduRate.Controllers
             var totalTeachers = await _context.TeacherCenters.CountAsync(tc => tc.CenterId == id && tc.IsActive);
 
             // بافتراض إن جدول الحجوزات اسمه Bookings ومربوط بالسنتر
-            var totalBookings = await _context.Bookings.CountAsync(b => b.CenterId == id);
+            
+            var totalBookings = await _context.Bookings.CountAsync(b => b.Session.CenterId == id);
 
             var ratings = await _context.Reviews.Where(r => r.CenterId == id).Select(r => r.Rating).ToListAsync();
             var avgRating = ratings.Any() ? ratings.Average() : 0;

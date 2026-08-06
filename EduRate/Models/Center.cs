@@ -18,7 +18,7 @@ namespace EduRate.Models
         public ICollection<TeacherCenter> TeacherCenters { get; set; }
         
         public ICollection<Review> CenterReviews { get; set; }
-        public ICollection<Booking> Bookings { get; set; }
+       
         public ICollection<CenterImage> CenterImagesBookings { get; set; }
     }
     }

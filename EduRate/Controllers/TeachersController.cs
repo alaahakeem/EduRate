@@ -211,7 +211,7 @@ namespace EduRate.Controllers
             if (!teacherExists) return NotFound(new { message = "المدرس غير موجود" });
 
             var bookings = await _context.Bookings
-                .Where(b => b.TeacherId == id)
+                .Where(b => b.Session.TeacherId == id)
                 .OrderByDescending(b => b.BookingDate)
                 .Select(b => new BookingReadDto
                 {
@@ -257,23 +257,30 @@ namespace EduRate.Controllers
         // ==========================================
         // 10. GET: إحصائيات لوحة التحكم (Dashboard Stats)
         // ==========================================
+        // ==========================================
+        // 10. GET: إحصائيات لوحة التحكم (Dashboard Stats)
+        // ==========================================
         [HttpGet("{id}/stats")]
         public async Task<ActionResult<TeacherStatsDto>> GetTeacherStats(int id)
         {
-            var teacher = await _context.Teachers
+            var teacherExists = await _context.Teachers.AnyAsync(t => t.Id == id);
+            if (!teacherExists) return NotFound(new { message = "المدرس غير موجود" });
+
+            // 👈 بنحسب الحجوزات الأول من خلال الحصص المرتبطة بالمدرس
+            var totalBookings = await _context.Bookings.CountAsync(b => b.Session.TeacherId == id);
+
+            var teacherStats = await _context.Teachers
                 .Where(t => t.Id == id)
                 .Select(t => new TeacherStatsDto
                 {
-                    TotalBookings = t.Bookings.Count,
+                    TotalBookings = totalBookings, // 👈 باصينا الرقم المحسوب هنا
                     TotalReviews = t.TotalReviews,
                     AverageRating = t.AverageRating,
                     TrustScore = t.TrustScore
                 })
                 .FirstOrDefaultAsync();
 
-            if (teacher == null) return NotFound(new { message = "المدرس غير موجود" });
-
-            return Ok(teacher);
+            return Ok(teacherStats);
         }
 
         // ==========================================
