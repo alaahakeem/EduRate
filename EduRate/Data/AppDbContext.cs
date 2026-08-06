@@ -22,6 +22,12 @@ namespace EduRate.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<Booking>()
+                .HasOne(b => b.Session)
+                .WithMany(s => s.Bookings)
+                .HasForeignKey(b => b.SessionId)
+                .OnDelete(DeleteBehavior.NoAction);
+
             // 1. تعريف المفتاح الأساسي المركب لجدول TeacherCenter
             modelBuilder.Entity<TeacherCenter>()
                 .HasKey(tc => new { tc.TeacherId, tc.CenterId });
