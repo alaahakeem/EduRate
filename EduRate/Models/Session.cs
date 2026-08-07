@@ -29,5 +29,6 @@ namespace EduRate.Models
 
         // العلاقة دي ضرورية جداً عشان نعرف مين حاجز الحصة
         public ICollection<Booking> Bookings { get; set; }
+        public ICollection<Review> SessionReviews { get; set; }
     }
 }

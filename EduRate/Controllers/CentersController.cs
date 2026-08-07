@@ -247,24 +247,24 @@ namespace EduRate.Controllers
         #region 4. التقييمات، المواعيد، الإحصائيات والتوثيق
 
         // GET: api/centers/5/reviews
-        [HttpGet("{id}/reviews")]
-        public async Task<ActionResult<IEnumerable<CenterReviewDto>>> GetCenterReviews(int id)
-        {
-            if (!await _context.Centers.AnyAsync(c => c.Id == id)) return NotFound();
+        //[HttpGet("{id}/reviews")]
+        //public async Task<ActionResult<IEnumerable<CenterReviewDto>>> GetCenterReviews(int id)
+        //{
+        //    if (!await _context.Centers.AnyAsync(c => c.Id == id)) return NotFound();
 
-            var reviews = await _context.Reviews
-                .Where(r => r.CenterId == id)
-                .Select(r => new CenterReviewDto
-                {
-                    Id = r.Id,
-                    StudentName = r.Student.Name,
-                    Rating = r.Rating,
-                    Comment = r.Comment,
-                    Date = r.CreatedAt
-                }).ToListAsync();
+        //    var reviews = await _context.Reviews
+        //        .Where(r => r.CenterId == id)
+        //        .Select(r => new CenterReviewDto
+        //        {
+        //            Id = r.Id,
+        //            StudentName = r.Student.Name,
+        //            Rating = r.Rating,
+        //            Comment = r.Comment,
+        //            Date = r.CreatedAt
+        //        }).ToListAsync();
 
-            return Ok(reviews);
-        }
+        //    return Ok(reviews);
+        //}
 
         // POST: api/centers/5/reviews
         [HttpPost("{id}/reviews")]

@@ -177,29 +177,29 @@ namespace EduRate.Controllers
         // ==========================================
         // 7. GET: جلب تقييمات المدرس (Reviews)
         // ==========================================
-        [HttpGet("{id}/reviews")]
-        public async Task<ActionResult<IEnumerable<ReviewReadDto>>> GetTeacherReviews(int id)
-        {
-            var teacherExists = await _context.Teachers.AnyAsync(t => t.Id == id);
-            if (!teacherExists) return NotFound(new { message = "المدرس غير موجود" });
+        //[HttpGet("{id}/reviews")]
+        //public async Task<ActionResult<IEnumerable<ReviewReadDto>>> GetTeacherReviews(int id)
+        //{
+        //    var teacherExists = await _context.Teachers.AnyAsync(t => t.Id == id);
+        //    if (!teacherExists) return NotFound(new { message = "المدرس غير موجود" });
 
-            var reviews = await _context.Reviews
-                .Where(r => r.TeacherId == id)
-                .OrderByDescending(r => r.CreatedAt)
-                .Select(r => new ReviewReadDto
-                {
-                    Id = r.Id,
-                    Rating = r.Rating,
-                    Comment = r.Comment,
-                    StudentName = r.Student.Name,
-                    CreatedAt = r.CreatedAt
-                })
-                .ToListAsync();
+        //    var reviews = await _context.Reviews
+        //        .Where(r => r.TeacherId == id)
+        //        .OrderByDescending(r => r.CreatedAt)
+        //        .Select(r => new ReviewReadDto
+        //        {
+        //            Id = r.Id,
+        //            Rating = r.Rating,
+        //            Comment = r.Comment,
+        //            StudentName = r.Student.Name,
+        //            CreatedAt = r.CreatedAt
+        //        })
+        //        .ToListAsync();
 
-            if (!reviews.Any()) return NotFound(new { message = "لا يوجد تقييمات لهذا المدرس حتى الآن" });
+        //    if (!reviews.Any()) return NotFound(new { message = "لا يوجد تقييمات لهذا المدرس حتى الآن" });
 
-            return Ok(reviews);
-        }
+        //    return Ok(reviews);
+        //}
 
         // ==========================================
         // 8. GET: جلب حجوزات المدرس (Bookings)
