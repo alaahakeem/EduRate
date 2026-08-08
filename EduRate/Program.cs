@@ -1,6 +1,6 @@
 ﻿using EduRate.Data;
 using Microsoft.EntityFrameworkCore;
-
+using EduRate.Services;
 namespace EduRate
 {
     public class Program
@@ -20,7 +20,8 @@ namespace EduRate
             builder.Services.AddSwaggerGen();
             builder.Services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+            // تسجيل خدمة الإشعارات
+            builder.Services.AddScoped<INotificationService, NotificationService>();
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

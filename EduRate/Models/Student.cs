@@ -14,5 +14,6 @@
         // العلاقات: الطالب ليه حجوزات كتير، وتقييمات كتير
         public ICollection<Booking> Bookings { get; set; }
         public ICollection<Review> Reviews { get; set; }
+        public ICollection<Notification> Notifications { get; set; }
     }
 }

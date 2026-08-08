@@ -18,6 +18,7 @@
 
         // العلاقة مع جدول الوسيط (TeacherCenter)
         public ICollection<TeacherCenter> TeacherCenters { get; set; }
+        public ICollection<Notification> Notifications { get; set; }
 
     }
 }

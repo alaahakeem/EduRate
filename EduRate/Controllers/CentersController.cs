@@ -1,6 +1,7 @@
 ﻿using EduRate.Data;
-using EduRate.Models;
 using EduRate.DTOs;
+using EduRate.Models;
+using EduRate.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -16,11 +17,13 @@ namespace EduRate.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _env;
+        private readonly INotificationService _notificationService;
 
-        public CentersController(AppDbContext context , IWebHostEnvironment env)
+        public CentersController(AppDbContext context , IWebHostEnvironment env, INotificationService notificationService)
         {
             _context = context;
             _env = env;
+            _notificationService = notificationService;
         }
 
         #region 1. CRUD (الأساسيات)
@@ -225,6 +228,17 @@ namespace EduRate.Controllers
 
             _context.TeacherCenters.Add(teacherCenter);
             await _context.SaveChangesAsync();
+
+            // ==========================================
+            // 💡 إرسال إشعار للمدرس بعد إضافته للسنتر
+            // ==========================================
+            // (بافتراض إن معاكي اسم السنتر في متغير اسمه centerName)
+            await _notificationService.SendToTeacherAsync(
+                dto.TeacherId, // أو المتغير اللي شايل الـ ID بتاع المدرس
+                "إضافة لسنتر جديد 🏢",
+                $"تمت إضافتك بنجاح ضمن هيئة تدريس السنتر."
+            );
+
             return Ok("Teacher added to center successfully.");
         }
 

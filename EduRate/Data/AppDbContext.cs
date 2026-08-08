@@ -15,6 +15,7 @@ namespace EduRate.Data
         public DbSet<Center> Centers { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<Session> Sessions { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
         public DbSet<CenterImage> CenterImages { get; set; }
         public DbSet<TeacherCenter> TeacherCenters { get; set; } // الجدول الوسيط
 

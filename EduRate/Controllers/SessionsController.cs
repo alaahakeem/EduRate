@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using EduRate.Data;
-using EduRate.Models;
+﻿using EduRate.Data;
 using EduRate.DTOs;
+using EduRate.Models;
+using EduRate.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,10 +16,12 @@ namespace EduRate.Controllers
     public class SessionsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly INotificationService _notificationService;
 
-        public SessionsController(AppDbContext context)
+        public SessionsController(AppDbContext context, INotificationService notificationService)
         {
             _context = context;
+            _notificationService = notificationService;
         }
 
         // ==========================================
@@ -75,9 +78,6 @@ namespace EduRate.Controllers
             return Ok(sessions);
         }
 
-        // ==========================================
-        // 3. POST: إضافة حصة جديدة 
-        // ==========================================
         [HttpPost]
         public async Task<ActionResult<SessionReadDto>> CreateSession(SessionCreateDto dto)
         {
@@ -122,6 +122,19 @@ namespace EduRate.Controllers
                 .Include(s => s.Teacher)
                 .Include(s => s.Center)
                 .FirstOrDefaultAsync(s => s.Id == newSession.Id);
+
+            // ==========================================
+            // 💡 إرسال إشعار للسنتر بعد جدولة حصة جديدة فيه
+            // ==========================================
+            if (createdSession != null)
+            {
+                await _notificationService.SendToCenterAsync(
+                    createdSession.CenterId, // لو الموديل عندك nullable استخدمي createdSession.CenterId.Value
+                    "حصة جديدة مجدولة 📅",
+                    $"قام المدرس {createdSession.Teacher.Name} بجدولة حصة '{createdSession.Title}' في السنتر الخاص بك يوم {createdSession.StartTime:yyyy-MM-dd}."
+                );
+            }
+            // ==========================================
 
             var readDto = new SessionReadDto
             {

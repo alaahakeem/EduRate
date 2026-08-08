@@ -1,12 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using EduRate.Data;
-using EduRate.Models;
+﻿using EduRate.Data;
 using EduRate.DTOs;
+using EduRate.Models;
+using EduRate.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 
 namespace EduRate.Controllers
 {
@@ -15,10 +16,12 @@ namespace EduRate.Controllers
     public class ReviewsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly INotificationService _notificationService;
 
-        public ReviewsController(AppDbContext context)
+        public ReviewsController(AppDbContext context, INotificationService notificationService)
         {
             _context = context;
+            _notificationService = notificationService;
         }
 
         // ==========================================
@@ -103,6 +106,7 @@ namespace EduRate.Controllers
                 _context.Reviews.Add(newReview);
             }
 
+           
             await _context.SaveChangesAsync();
 
             // 4. Auto-Calculate Average: تحديث المتوسط العام
@@ -112,6 +116,26 @@ namespace EduRate.Controllers
             // لو عندك AverageRating للسنتر تقدري تفكي الكومنت هنا
             // if (dto.CenterId != null)
             //     await UpdateCenterAverageRating(dto.CenterId.Value);
+
+            // ==========================================
+            // 💡 إرسال إشعار للمدرس أو السنتر بعد نجاح التقييم
+            // ==========================================
+            if (dto.TeacherId.HasValue)
+            {
+                await _notificationService.SendToTeacherAsync(
+                    dto.TeacherId.Value,
+                    "تقييم جديد! 🌟",
+                    $"قام أحد الطلاب بإضافة تقييم جديد لك بـ {dto.Rating} نجوم."
+                );
+            }
+            else if (dto.CenterId.HasValue)
+            {
+                await _notificationService.SendToCenterAsync(
+                    dto.CenterId.Value,
+                    "تقييم جديد للسنتر! 🏢",
+                    $"حصل السنتر على تقييم جديد بـ {dto.Rating} نجوم من أحد الطلاب."
+                );
+            }
 
             return Ok(new { message = "تم حفظ التقييم بنجاح." });
         }

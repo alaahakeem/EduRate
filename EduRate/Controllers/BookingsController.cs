@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using EduRate.Data;
-using EduRate.Models;
+﻿using EduRate.Data;
 using EduRate.DTOs;
+using EduRate.Models;
+using EduRate.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,15 +16,14 @@ namespace EduRate.Controllers
     public class BookingsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly INotificationService _notificationService;
 
-        public BookingsController(AppDbContext context)
+        public BookingsController(AppDbContext context, INotificationService notificationService)
         {
             _context = context;
-        }
+            _notificationService = notificationService;
 
-        // ==========================================
-        // 1. POST: إضافة حجز جديد (مع البيزنس لوجيك)
-        // ==========================================
+        }
         [HttpPost]
         public async Task<ActionResult<BookingReaddDto>> CreateBooking(BookingCreateDto dto)
         {
@@ -69,11 +69,40 @@ namespace EduRate.Controllers
             _context.Bookings.Add(booking);
             await _context.SaveChangesAsync();
 
+            // 💡 إحنا هنسيب السطر بتاعك اللي بيجيب الداتا كاملة زي ما هو، وهنستغله للإشعارات
             var createdBooking = await _context.Bookings
                 .Include(b => b.Student)
                 .Include(b => b.Session).ThenInclude(s => s.Teacher)
                 .Include(b => b.Session).ThenInclude(s => s.Center)
                 .FirstOrDefaultAsync(b => b.Id == booking.Id);
+
+            // ==========================================
+            // 💡 إضافة كود الإشعارات هنا (استخدمنا الأسماء من createdBooking)
+            // ==========================================
+            if (createdBooking != null)
+            {
+                // 1. إشعار للطالب
+                await _notificationService.SendToStudentAsync(
+                    dto.StudentId,
+                    "تم تأكيد حجزك! 🎉",
+                    $"تم تأكيد حجزك بنجاح في الحصة '{createdBooking.Session.Title}'. استعد للمذاكرة!"
+                );
+
+                // 2. إشعار للمدرس
+                await _notificationService.SendToTeacherAsync(
+                    createdBooking.Session.Teacher.Id,
+                    "حجز جديد! 📅",
+                    $"قام الطالب {createdBooking.Student.Name} بحجز مقعد في حصتك '{createdBooking.Session.Title}'."
+                );
+
+                // 3. إشعار للسنتر
+                await _notificationService.SendToCenterAsync(
+                    createdBooking.Session.Center.Id,
+                    "تأكيد حجز جديد 🏢",
+                    $"تم حجز مقعد جديد للطالب {createdBooking.Student.Name} في الحصة الخاصة بالمدرس {createdBooking.Session.Teacher.Name}."
+                );
+            }
+            // ==========================================
 
             var readDto = new BookingReaddDto
             {

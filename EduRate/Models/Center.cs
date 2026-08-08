@@ -20,5 +20,6 @@ namespace EduRate.Models
         public ICollection<Review> CenterReviews { get; set; }
        
         public ICollection<CenterImage> CenterImagesBookings { get; set; }
+        public ICollection<Notification> Notifications { get; set; }
     }
     }
