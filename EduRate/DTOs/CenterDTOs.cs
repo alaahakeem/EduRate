@@ -14,8 +14,9 @@ namespace EduRate.DTOs
 
     public class CenterDetailsDto : CenterDto
     {
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
+        // 💡 التعديل: خليناهم يقبلوا Null عشان يطابقوا الموديل
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
     }
 
     public class CenterCreateDto
@@ -24,8 +25,9 @@ namespace EduRate.DTOs
         public string Name { get; set; }
         [Required]
         public string Location { get; set; }
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
+        // 💡 التعديل: خليناهم يقبلوا Null
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
     }
 
     public class CenterUpdateDto : CenterCreateDto
@@ -89,6 +91,7 @@ namespace EduRate.DTOs
         public int TotalStudentsBooked { get; set; }
         public double AverageRating { get; set; }
     }
+
     public class CenterImageDto
     {
         public int Id { get; set; }

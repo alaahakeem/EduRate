@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using EduRate.Data;
 using EduRate.Models;
 using EduRate.DTOs;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace EduRate.Controllers
 {
@@ -24,15 +27,16 @@ namespace EduRate.Controllers
         public async Task<ActionResult<IEnumerable<TeacherReadDto>>> GetTeachers()
         {
             var teachers = await _context.Teachers
+                .Include(t => t.Subject) // 💡 عشان نقرأ من جدول المادة
                 .OrderByDescending(t => t.AverageRating)
                 .Select(t => new TeacherReadDto
                 {
                     Id = t.Id,
                     Name = t.Name,
-                    Subject = t.Subject,
+                    SubjectName = t.Subject != null ? t.Subject.Name : "غير محدد", // 💡 التعديل
                     Bio = t.Bio,
                     YearsOfExperience = t.YearsOfExperience,
-                    DemoVideoUrl = t.DemoVideoUrl, // تم الإضافة
+                    DemoVideoUrl = t.DemoVideoUrl,
                     TrustScore = t.TrustScore,
                     AverageRating = t.AverageRating,
                     TotalReviews = t.TotalReviews
@@ -49,15 +53,16 @@ namespace EduRate.Controllers
         public async Task<ActionResult<TeacherReadDto>> GetTeacher(int id)
         {
             var teacher = await _context.Teachers
+                .Include(t => t.Subject) // 💡 الإضافة
                 .Where(t => t.Id == id)
                 .Select(t => new TeacherReadDto
                 {
                     Id = t.Id,
                     Name = t.Name,
-                    Subject = t.Subject,
+                    SubjectName = t.Subject != null ? t.Subject.Name : "غير محدد", // 💡 التعديل
                     Bio = t.Bio,
                     YearsOfExperience = t.YearsOfExperience,
-                    DemoVideoUrl = t.DemoVideoUrl, // تم الإضافة
+                    DemoVideoUrl = t.DemoVideoUrl,
                     TrustScore = t.TrustScore,
                     AverageRating = t.AverageRating,
                     TotalReviews = t.TotalReviews
@@ -78,10 +83,10 @@ namespace EduRate.Controllers
             var newTeacher = new Teacher
             {
                 Name = dto.Name,
-                Subject = dto.Subject,
+                SubjectId = dto.SubjectId, // 💡 التعديل
                 Bio = dto.Bio,
                 YearsOfExperience = dto.YearsOfExperience,
-                DemoVideoUrl = dto.DemoVideoUrl, // تم الإضافة
+                DemoVideoUrl = dto.DemoVideoUrl,
                 TrustScore = 100,
                 AverageRating = 0,
                 TotalReviews = 0
@@ -90,14 +95,20 @@ namespace EduRate.Controllers
             _context.Teachers.Add(newTeacher);
             await _context.SaveChangesAsync();
 
+            // 💡 هنجيب اسم المادة من الداتابيز عشان نرجعه في الرد للفرونت إند
+            var subjectName = await _context.Subjects
+                .Where(s => s.Id == dto.SubjectId)
+                .Select(s => s.Name)
+                .FirstOrDefaultAsync() ?? "غير محدد";
+
             var readDto = new TeacherReadDto
             {
                 Id = newTeacher.Id,
                 Name = newTeacher.Name,
-                Subject = newTeacher.Subject,
+                SubjectName = subjectName, // 💡 التعديل
                 Bio = newTeacher.Bio,
                 YearsOfExperience = newTeacher.YearsOfExperience,
-                DemoVideoUrl = newTeacher.DemoVideoUrl, // تم الإضافة
+                DemoVideoUrl = newTeacher.DemoVideoUrl,
                 TrustScore = newTeacher.TrustScore,
                 AverageRating = newTeacher.AverageRating,
                 TotalReviews = newTeacher.TotalReviews
@@ -116,10 +127,10 @@ namespace EduRate.Controllers
             if (teacher == null) return NotFound(new { message = "المدرس غير موجود" });
 
             teacher.Name = dto.Name;
-            teacher.Subject = dto.Subject;
+            teacher.SubjectId = dto.SubjectId; // 💡 التعديل
             teacher.Bio = dto.Bio;
             teacher.YearsOfExperience = dto.YearsOfExperience;
-            teacher.DemoVideoUrl = dto.DemoVideoUrl; // تم الإضافة
+            teacher.DemoVideoUrl = dto.DemoVideoUrl;
 
             await _context.SaveChangesAsync();
 
@@ -147,13 +158,14 @@ namespace EduRate.Controllers
         [HttpGet("search")]
         public async Task<ActionResult<IEnumerable<TeacherReadDto>>> SearchTeachers([FromQuery] string? name, [FromQuery] string? subject)
         {
-            var query = _context.Teachers.AsQueryable();
+            var query = _context.Teachers.Include(t => t.Subject).AsQueryable(); // 💡 ضفنا Include
 
             if (!string.IsNullOrEmpty(name))
                 query = query.Where(t => t.Name.Contains(name));
 
+            // 💡 التعديل: بنبحث جوه اسم المادة في الجدول المرتبط
             if (!string.IsNullOrEmpty(subject))
-                query = query.Where(t => t.Subject.Contains(subject));
+                query = query.Where(t => t.Subject != null && t.Subject.Name.Contains(subject));
 
             var result = await query
                 .OrderByDescending(t => t.AverageRating)
@@ -161,10 +173,10 @@ namespace EduRate.Controllers
                 {
                     Id = t.Id,
                     Name = t.Name,
-                    Subject = t.Subject,
+                    SubjectName = t.Subject != null ? t.Subject.Name : "غير محدد", // 💡 التعديل
                     Bio = t.Bio,
                     YearsOfExperience = t.YearsOfExperience,
-                    DemoVideoUrl = t.DemoVideoUrl, // تم الإضافة
+                    DemoVideoUrl = t.DemoVideoUrl,
                     TrustScore = t.TrustScore,
                     AverageRating = t.AverageRating,
                     TotalReviews = t.TotalReviews
@@ -175,31 +187,10 @@ namespace EduRate.Controllers
         }
 
         // ==========================================
-        // 7. GET: جلب تقييمات المدرس (Reviews)
+        // 7. GET: جلب تقييمات المدرس (Reviews) - معلق
         // ==========================================
         //[HttpGet("{id}/reviews")]
-        //public async Task<ActionResult<IEnumerable<ReviewReadDto>>> GetTeacherReviews(int id)
-        //{
-        //    var teacherExists = await _context.Teachers.AnyAsync(t => t.Id == id);
-        //    if (!teacherExists) return NotFound(new { message = "المدرس غير موجود" });
-
-        //    var reviews = await _context.Reviews
-        //        .Where(r => r.TeacherId == id)
-        //        .OrderByDescending(r => r.CreatedAt)
-        //        .Select(r => new ReviewReadDto
-        //        {
-        //            Id = r.Id,
-        //            Rating = r.Rating,
-        //            Comment = r.Comment,
-        //            StudentName = r.Student.Name,
-        //            CreatedAt = r.CreatedAt
-        //        })
-        //        .ToListAsync();
-
-        //    if (!reviews.Any()) return NotFound(new { message = "لا يوجد تقييمات لهذا المدرس حتى الآن" });
-
-        //    return Ok(reviews);
-        //}
+        // ...
 
         // ==========================================
         // 8. GET: جلب حجوزات المدرس (Bookings)
@@ -243,8 +234,9 @@ namespace EduRate.Controllers
                     CenterName = tc.Center.Name,
                     Address = tc.Center.Address,
                     Description = tc.Center.Description,
-                    Latitude = tc.Center.Latitude,
-                    Longitude = tc.Center.Longitude,
+                    // 💡 عالجنا حالة لو الموديل كان Null في الإحداثيات
+                    Latitude = tc.Center.Latitude ?? 0,
+                    Longitude = tc.Center.Longitude ?? 0,
                     PricePerSession = tc.Price
                 })
                 .ToListAsync();
@@ -257,23 +249,19 @@ namespace EduRate.Controllers
         // ==========================================
         // 10. GET: إحصائيات لوحة التحكم (Dashboard Stats)
         // ==========================================
-        // ==========================================
-        // 10. GET: إحصائيات لوحة التحكم (Dashboard Stats)
-        // ==========================================
         [HttpGet("{id}/stats")]
         public async Task<ActionResult<TeacherStatsDto>> GetTeacherStats(int id)
         {
             var teacherExists = await _context.Teachers.AnyAsync(t => t.Id == id);
             if (!teacherExists) return NotFound(new { message = "المدرس غير موجود" });
 
-            // 👈 بنحسب الحجوزات الأول من خلال الحصص المرتبطة بالمدرس
             var totalBookings = await _context.Bookings.CountAsync(b => b.Session.TeacherId == id);
 
             var teacherStats = await _context.Teachers
                 .Where(t => t.Id == id)
                 .Select(t => new TeacherStatsDto
                 {
-                    TotalBookings = totalBookings, // 👈 باصينا الرقم المحسوب هنا
+                    TotalBookings = totalBookings,
                     TotalReviews = t.TotalReviews,
                     AverageRating = t.AverageRating,
                     TrustScore = t.TrustScore

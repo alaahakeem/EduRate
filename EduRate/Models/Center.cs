@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace EduRate.Models
 {
@@ -10,16 +11,23 @@ namespace EduRate.Models
         public string Address { get; set; }
         public bool IsVerified { get; set; }
 
-        // الخصائص الجديدة الخاصة بالخريطة
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
+        // الخصائص الخاصة بالخريطة (خليناها Nullable عشان لو سنتر لسه متحددش موقعه)
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
 
         // العلاقة مع جدول الوسيط (TeacherCenter)
         public ICollection<TeacherCenter> TeacherCenters { get; set; }
-        
+
         public ICollection<Review> CenterReviews { get; set; }
-       
-        public ICollection<CenterImage> CenterImagesBookings { get; set; }
+
+        // تم تصحيح الاسم ليتطابق مع الـ DbContext والكنترولر
+        public ICollection<CenterImage> CenterImages { get; set; }
+
         public ICollection<Notification> Notifications { get; set; }
+
+        // 💡 إضافة العلاقة الجديدة: الطلاب اللي حاطين السنتر ده في المفضلة
+        public ICollection<StudentFavorite> FavoritedByStudents { get; set; } = new List<StudentFavorite>();
+
+        public ICollection<PromoCode> PromoCodes { get; set; }
     }
-    }
+}

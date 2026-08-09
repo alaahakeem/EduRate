@@ -18,6 +18,9 @@ namespace EduRate.Data
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<CenterImage> CenterImages { get; set; }
         public DbSet<TeacherCenter> TeacherCenters { get; set; } // الجدول الوسيط
+        public DbSet<StudentFavorite> StudentFavorites { get; set; }
+        public DbSet<Subject> Subjects { get; set; }
+        public DbSet<PromoCode> PromoCodes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

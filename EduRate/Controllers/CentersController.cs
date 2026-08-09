@@ -19,7 +19,7 @@ namespace EduRate.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly INotificationService _notificationService;
 
-        public CentersController(AppDbContext context , IWebHostEnvironment env, INotificationService notificationService)
+        public CentersController(AppDbContext context, IWebHostEnvironment env, INotificationService notificationService)
         {
             _context = context;
             _env = env;
@@ -144,8 +144,7 @@ namespace EduRate.Controllers
         [HttpGet("nearby")]
         public async Task<ActionResult<IEnumerable<CenterDto>>> GetNearbyCenters([FromQuery] double lat, [FromQuery] double lng)
         {
-            // تقريب بسيط باستخدام مسافة المربع (Bounding Box) لتجنب أخطاء EF Core مع العمليات الحسابية المعقدة
-            double range = 0.05; // تقريباً 5 كيلو متر
+            double range = 0.05;
 
             var centers = await _context.Centers
                 .Where(c => c.Latitude != null && c.Longitude != null &&
@@ -166,7 +165,6 @@ namespace EduRate.Controllers
         [HttpGet("top")]
         public async Task<ActionResult<IEnumerable<CenterDto>>> GetTopCenters()
         {
-            // بنجيب السناتر بناءً على أعلى تقييم
             var topCenters = await _context.Centers
                 .Where(c => c.IsVerified)
                 .OrderByDescending(c => c.CenterReviews.Average(r => (double?)r.Rating) ?? 0)
@@ -198,7 +196,8 @@ namespace EduRate.Controllers
                 {
                     TeacherId = tc.Teacher.Id,
                     TeacherName = tc.Teacher.Name,
-                    Subject = tc.Teacher.Subject,
+                    // 💡 التعديل هنا: بنقرأ اسم المادة من الجدول الجديد
+                    Subject = tc.Teacher.Subject != null ? tc.Teacher.Subject.Name : "غير محدد",
                     Price = tc.Price,
                     ProfitPercentage = tc.ProfitPercentage,
                     IsActive = tc.IsActive
@@ -213,7 +212,6 @@ namespace EduRate.Controllers
         {
             if (!await _context.Centers.AnyAsync(c => c.Id == id)) return NotFound("Center not found.");
 
-            // التأكد إن المدرس مش متضاف قبل كده في السنتر ده
             var exists = await _context.TeacherCenters.AnyAsync(tc => tc.CenterId == id && tc.TeacherId == dto.TeacherId);
             if (exists) return BadRequest("Teacher is already in this center.");
 
@@ -229,12 +227,8 @@ namespace EduRate.Controllers
             _context.TeacherCenters.Add(teacherCenter);
             await _context.SaveChangesAsync();
 
-            // ==========================================
-            // 💡 إرسال إشعار للمدرس بعد إضافته للسنتر
-            // ==========================================
-            // (بافتراض إن معاكي اسم السنتر في متغير اسمه centerName)
             await _notificationService.SendToTeacherAsync(
-                dto.TeacherId, // أو المتغير اللي شايل الـ ID بتاع المدرس
+                dto.TeacherId,
                 "إضافة لسنتر جديد 🏢",
                 $"تمت إضافتك بنجاح ضمن هيئة تدريس السنتر."
             );
@@ -251,7 +245,7 @@ namespace EduRate.Controllers
 
             if (relation == null) return NotFound("Teacher not found in this center.");
 
-            relation.IsActive = !relation.IsActive; // بتعكس الحالة (شغال / موقوف)
+            relation.IsActive = !relation.IsActive;
             await _context.SaveChangesAsync();
             return Ok($"Teacher status changed to {(relation.IsActive ? "Active" : "Inactive")}.");
         }
@@ -259,26 +253,6 @@ namespace EduRate.Controllers
         #endregion
 
         #region 4. التقييمات، المواعيد، الإحصائيات والتوثيق
-
-        // GET: api/centers/5/reviews
-        //[HttpGet("{id}/reviews")]
-        //public async Task<ActionResult<IEnumerable<CenterReviewDto>>> GetCenterReviews(int id)
-        //{
-        //    if (!await _context.Centers.AnyAsync(c => c.Id == id)) return NotFound();
-
-        //    var reviews = await _context.Reviews
-        //        .Where(r => r.CenterId == id)
-        //        .Select(r => new CenterReviewDto
-        //        {
-        //            Id = r.Id,
-        //            StudentName = r.Student.Name,
-        //            Rating = r.Rating,
-        //            Comment = r.Comment,
-        //            Date = r.CreatedAt
-        //        }).ToListAsync();
-
-        //    return Ok(reviews);
-        //}
 
         // POST: api/centers/5/reviews
         [HttpPost("{id}/reviews")]
@@ -313,7 +287,8 @@ namespace EduRate.Controllers
                 {
                     SessionId = s.Id,
                     TeacherName = s.Teacher.Name,
-                    Subject = s.Teacher.Subject,
+                    // 💡 التعديل هنا: بنقرأ اسم المادة من الجدول الجديد
+                    Subject = s.Teacher.Subject != null ? s.Teacher.Subject.Name : "غير محدد",
                     StartTime = s.StartTime,
                     EndTime = s.EndTime
                 }).ToListAsync();
@@ -341,8 +316,6 @@ namespace EduRate.Controllers
 
             var totalTeachers = await _context.TeacherCenters.CountAsync(tc => tc.CenterId == id && tc.IsActive);
 
-            // بافتراض إن جدول الحجوزات اسمه Bookings ومربوط بالسنتر
-            
             var totalBookings = await _context.Bookings.CountAsync(b => b.Session.CenterId == id);
 
             var ratings = await _context.Reviews.Where(r => r.CenterId == id).Select(r => r.Rating).ToListAsync();
@@ -357,16 +330,17 @@ namespace EduRate.Controllers
 
             return Ok(stats);
         }
+
+        #endregion
+
         #region 5. صور السنتر (Gallery)
 
         // GET: api/centers/5/images
         [HttpGet("{id}/images")]
         public async Task<ActionResult<IEnumerable<CenterImageDto>>> GetCenterImages(int id)
         {
-            // بنتأكد إن السنتر موجود أصلاً
             if (!await _context.Centers.AnyAsync(c => c.Id == id)) return NotFound("Center not found.");
 
-            // بافتراض إن عندك جدول للصور اسمه CenterImages
             var images = await _context.CenterImages
                 .Where(img => img.CenterId == id)
                 .Select(img => new CenterImageDto
@@ -386,27 +360,21 @@ namespace EduRate.Controllers
             if (!await _context.Centers.AnyAsync(c => c.Id == id)) return NotFound("Center not found.");
             if (file == null || file.Length == 0) return BadRequest("No image uploaded.");
 
-            // 1. بنحدد المسار اللي هنحفظ فيه (مثلاً: wwwroot/uploads/centers/5)
             var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "centers", id.ToString());
 
-            // لو الفولدر ده مش موجود أصلاً، نخليه يكريته
             if (!Directory.Exists(uploadsFolder))
                 Directory.CreateDirectory(uploadsFolder);
 
-            // 2. بنعمل اسم فريد للصورة عشان لو حد رفع صورتين ليهم نفس الاسم الكود ميضربش
             var uniqueFileName = Guid.NewGuid().ToString() + "_" + file.FileName;
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
-            // 3. هنا بقى بناخد الملف اللي جي من السواجر ونحفظه فعلياً في الهارد ديسك
             using (var fileStream = new FileStream(filePath, FileMode.Create))
             {
                 await file.CopyToAsync(fileStream);
             }
 
-            // 4. بنجهز اللينك اللي هيتخزن في الداتابيز واللي الفرونت إند هيستخدمه
             string actualUrl = $"/uploads/centers/{id}/{uniqueFileName}";
 
-            // 5. بنسيف في الداتابيز
             var centerImage = new CenterImage
             {
                 CenterId = id,
@@ -420,7 +388,6 @@ namespace EduRate.Controllers
             return Ok(new { Message = "Image uploaded successfully", Url = actualUrl });
         }
 
-        #endregion
         #endregion
     }
 }

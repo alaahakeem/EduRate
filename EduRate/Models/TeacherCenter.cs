@@ -1,4 +1,6 @@
-﻿namespace EduRate.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace EduRate.Models
 {
     public class TeacherCenter
     {
@@ -11,8 +13,12 @@
 
         // التفاصيل الإضافية للعلاقة
         public DateTime JoinDate { get; set; } = DateTime.Now; // تاريخ الانضمام
+
+        [Column(TypeName = "decimal(18,2)")]
         public decimal ProfitPercentage { get; set; } // نسبة المدرس من أرباح الحصة
         public bool IsActive { get; set; } = true; // هل لسه شغال في السنتر ده ولا سابهم؟
+
+        [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
     }
 }
