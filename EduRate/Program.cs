@@ -6,11 +6,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+// 💡 المكتبات الجديدة اللي ضفناها عشان الأمان
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using EduRate.Models;
+
 namespace EduRate
 {
     public class Program
     {
-        // 💡 التعديل هنا: غيرنا void لـ async Task
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +33,35 @@ namespace EduRate
 
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            // ==============================================================================
+            // 💡 1. تفعيل نظام الـ Identity والـ JWT 
+            // ==============================================================================
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+                .AddEntityFrameworkStores<AppDbContext>()
+                .AddDefaultTokenProviders();
+
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(o =>
+            {
+                o.RequireHttpsMetadata = false;
+                o.SaveToken = false;
+                o.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidIssuer = builder.Configuration["JWT:Issuer"],
+                    ValidAudience = builder.Configuration["JWT:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]))
+                };
+            });
+            // ==============================================================================
 
             // تسجيل خدمة الإشعارات
             builder.Services.AddScoped<INotificationService, NotificationService>();
@@ -45,12 +80,16 @@ namespace EduRate
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
+
+            // 💡 2. تفعيل المصادقة (لازم يكون قبل سطر الـ Authorization)
+            app.UseAuthentication();
+
             app.UseAuthorization();
             app.MapControllers();
 
             // === بذر الداتا الكبيرة والكاملة مباشرة ===
             // ==============================================================================
-            // 💡 DATABASE SEEDER (English Data + Large Volume + All 14 Models)
+            // 💡 DATABASE SEEDER (Identity + Models Data)
             // ==============================================================================
             using (var scope = app.Services.CreateScope())
             {
@@ -58,9 +97,61 @@ namespace EduRate
                 try
                 {
                     var context = services.GetRequiredService<EduRate.Data.AppDbContext>();
+                    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
                     // 1. تطبيق الميجريشن لو فيه حاجة ناقصة
                     await context.Database.MigrateAsync();
+
+                    // ==========================================
+                    // 💡 بذر حسابات الأمان الأساسية (Identity Seeding)
+                    // ==========================================
+
+                    // 1. حساب الأدمن
+                    if (await userManager.FindByEmailAsync("admin@edurate.com") == null)
+                    {
+                        var admin = new ApplicationUser { UserName = "admin", Email = "admin@edurate.com", UserType = "Admin" };
+                        await userManager.CreateAsync(admin, "Admin@123");
+                    }
+
+                    // 2. حساب الطالب التجريبي
+                    if (await userManager.FindByEmailAsync("student@edurate.com") == null)
+                    {
+                        var studentUser = new ApplicationUser { UserName = "test_student", Email = "student@edurate.com", UserType = "Student" };
+                        var result = await userManager.CreateAsync(studentUser, "Student@123");
+
+                        if (result.Succeeded && !await context.Students.AnyAsync(s => s.Email == "student@edurate.com"))
+                        {
+                            context.Students.Add(new EduRate.Models.Student
+                            {
+                                Name = "Test Student",
+                                Email = "student@edurate.com",
+                                // 💡 هنا التعديل: إديناه قيمة افتراضية للطالب الوهمي عشان الإيرور يختفي
+                                EducationalStage = (EduRate.Models.EducationalStage)1,
+                                WalletBalance = 500,
+                                RewardPoints = 100
+                            });
+                            await context.SaveChangesAsync();
+                        }
+                    }
+
+                    // 3. حساب المدرس التجريبي
+                    if (await userManager.FindByEmailAsync("teacher@edurate.com") == null)
+                    {
+                        var teacherUser = new ApplicationUser { UserName = "test_teacher", Email = "teacher@edurate.com", UserType = "Teacher" };
+                        var result = await userManager.CreateAsync(teacherUser, "Teacher@123");
+
+                        if (result.Succeeded && !await context.Teachers.AnyAsync(t => t.Name == "Test Teacher"))
+                        {
+                            context.Teachers.Add(new EduRate.Models.Teacher
+                            {
+                                Name = "Test Teacher",
+                                Bio = "Official Test Teacher Account",
+                                TrustScore = 100,
+                                YearsOfExperience = 5
+                            });
+                            await context.SaveChangesAsync();
+                        }
+                    }
 
                     var random = new Random();
 
@@ -127,7 +218,7 @@ namespace EduRate
                     }
 
                     // 5. Seed Teachers (المدرسين)
-                    if (!await context.Teachers.AnyAsync())
+                    if (!await context.Teachers.AnyAsync(t => t.Name != "Test Teacher"))
                     {
                         var teachers = new List<EduRate.Models.Teacher>();
                         var firstNames = new[] { "John", "Michael", "David", "James", "Robert", "William", "Sarah", "Emily", "Jessica", "Olivia" };
@@ -180,7 +271,7 @@ namespace EduRate
                     }
 
                     // 7. Seed Students (الطلاب)
-                    if (!await context.Students.AnyAsync())
+                    if (!await context.Students.AnyAsync(s => s.Email != "student@edurate.com"))
                     {
                         var students = new List<EduRate.Models.Student>();
                         var studentNames = new[] { "Alex", "Chris", "Daniel", "Matthew", "Anthony", "Sophia", "Isabella", "Mia", "Amelia", "Harper" };
@@ -213,25 +304,28 @@ namespace EduRate
                         var sessions = new List<EduRate.Models.Session>();
                         var tcList = await context.TeacherCenters.Include(tc => tc.Teacher).Include(tc => tc.Teacher.Subject).ToListAsync();
 
-                        for (int i = 0; i < 100; i++)
+                        if (tcList.Any())
                         {
-                            var tc = tcList[random.Next(tcList.Count)];
-                            var startTime = DateTime.Now.AddDays(random.Next(-10, 20)).AddHours(random.Next(8, 20));
-
-                            sessions.Add(new EduRate.Models.Session
+                            for (int i = 0; i < 100; i++)
                             {
-                                Title = $"{tc.Teacher.Subject?.Name ?? "General"} Revision Session",
-                                StartTime = startTime,
-                                EndTime = startTime.AddHours(2),
-                                Price = tc.Price,
-                                EducationalStage = tc.Teacher.Subject?.EducationalStage.ToString() ?? "General",
-                                Status = startTime < DateTime.Now ? "Completed" : "Available",
-                                CenterId = tc.CenterId,
-                                TeacherId = tc.TeacherId
-                            });
+                                var tc = tcList[random.Next(tcList.Count)];
+                                var startTime = DateTime.Now.AddDays(random.Next(-10, 20)).AddHours(random.Next(8, 20));
+
+                                sessions.Add(new EduRate.Models.Session
+                                {
+                                    Title = $"{tc.Teacher.Subject?.Name ?? "General"} Revision Session",
+                                    StartTime = startTime,
+                                    EndTime = startTime.AddHours(2),
+                                    Price = tc.Price,
+                                    EducationalStage = tc.Teacher.Subject?.EducationalStage.ToString() ?? "General",
+                                    Status = startTime < DateTime.Now ? "Completed" : "Available",
+                                    CenterId = tc.CenterId,
+                                    TeacherId = tc.TeacherId
+                                });
+                            }
+                            await context.Sessions.AddRangeAsync(sessions);
+                            await context.SaveChangesAsync();
                         }
-                        await context.Sessions.AddRangeAsync(sessions);
-                        await context.SaveChangesAsync();
                     }
 
                     // 9. Seed Bookings (الحجوزات)
@@ -241,22 +335,25 @@ namespace EduRate
                         var studentsList = await context.Students.ToListAsync();
                         var sessionsList = await context.Sessions.ToListAsync();
 
-                        for (int i = 0; i < 300; i++)
+                        if (studentsList.Any() && sessionsList.Any())
                         {
-                            var session = sessionsList[random.Next(sessionsList.Count)];
-                            var isPast = session.StartTime < DateTime.Now;
-
-                            bookings.Add(new EduRate.Models.Booking
+                            for (int i = 0; i < 300; i++)
                             {
-                                StudentId = studentsList[random.Next(studentsList.Count)].Id,
-                                SessionId = session.Id,
-                                BookingDate = session.StartTime.AddDays(-random.Next(1, 5)),
-                                Status = "Confirmed",
-                                IsAttended = isPast && random.Next(0, 100) > 20
-                            });
+                                var session = sessionsList[random.Next(sessionsList.Count)];
+                                var isPast = session.StartTime < DateTime.Now;
+
+                                bookings.Add(new EduRate.Models.Booking
+                                {
+                                    StudentId = studentsList[random.Next(studentsList.Count)].Id,
+                                    SessionId = session.Id,
+                                    BookingDate = session.StartTime.AddDays(-random.Next(1, 5)),
+                                    Status = "Confirmed",
+                                    IsAttended = isPast && random.Next(0, 100) > 20
+                                });
+                            }
+                            await context.Bookings.AddRangeAsync(bookings);
+                            await context.SaveChangesAsync();
                         }
-                        await context.Bookings.AddRangeAsync(bookings);
-                        await context.SaveChangesAsync();
                     }
 
                     // 10. Seed Reviews (التقييمات)
@@ -268,24 +365,27 @@ namespace EduRate
                         var centersList = await context.Centers.ToListAsync();
                         var comments = new[] { "Excellent!", "Very good explanation", "Center is a bit crowded but good", "Great experience", "Highly recommended!" };
 
-                        for (int i = 0; i < 200; i++)
+                        if (studentsList.Any() && teachersList.Any() && centersList.Any())
                         {
-                            bool isForTeacher = random.Next(0, 2) == 0;
-
-                            reviews.Add(new EduRate.Models.Review
+                            for (int i = 0; i < 200; i++)
                             {
-                                Rating = random.Next(3, 6),
-                                Comment = comments[random.Next(comments.Length)],
-                                CreatedAt = DateTime.Now.AddDays(-random.Next(1, 60)),
-                                IsVerified = true,
-                                IsAnonymous = random.Next(0, 2) == 0,
-                                StudentId = studentsList[random.Next(studentsList.Count)].Id,
-                                TeacherId = isForTeacher ? teachersList[random.Next(teachersList.Count)].Id : null,
-                                CenterId = !isForTeacher ? centersList[random.Next(centersList.Count)].Id : null
-                            });
+                                bool isForTeacher = random.Next(0, 2) == 0;
+
+                                reviews.Add(new EduRate.Models.Review
+                                {
+                                    Rating = random.Next(3, 6),
+                                    Comment = comments[random.Next(comments.Length)],
+                                    CreatedAt = DateTime.Now.AddDays(-random.Next(1, 60)),
+                                    IsVerified = true,
+                                    IsAnonymous = random.Next(0, 2) == 0,
+                                    StudentId = studentsList[random.Next(studentsList.Count)].Id,
+                                    TeacherId = isForTeacher ? teachersList[random.Next(teachersList.Count)].Id : null,
+                                    CenterId = !isForTeacher ? centersList[random.Next(centersList.Count)].Id : null
+                                });
+                            }
+                            await context.Reviews.AddRangeAsync(reviews);
+                            await context.SaveChangesAsync();
                         }
-                        await context.Reviews.AddRangeAsync(reviews);
-                        await context.SaveChangesAsync();
                     }
 
                     // 11. Seed Messages (الرسائل)
@@ -296,22 +396,25 @@ namespace EduRate
                         var teachersList = await context.Teachers.ToListAsync();
                         var messageContents = new[] { "Hello Teacher, when is the next session?", "Thank you for the great lesson!", "Can you send me the PDF?", "I will be late for the next class.", "Great job in the exam!" };
 
-                        for (int i = 0; i < 100; i++)
+                        if (studentsList.Any() && teachersList.Any())
                         {
-                            bool isFromStudent = random.Next(0, 2) == 0;
-
-                            messages.Add(new EduRate.Models.Message
+                            for (int i = 0; i < 100; i++)
                             {
-                                Content = messageContents[random.Next(messageContents.Length)],
-                                SentAt = DateTime.Now.AddDays(-random.Next(1, 30)),
-                                IsRead = random.Next(0, 2) == 0,
-                                SenderRole = isFromStudent ? "Student" : "Teacher",
-                                StudentId = studentsList[random.Next(studentsList.Count)].Id,
-                                TeacherId = teachersList[random.Next(teachersList.Count)].Id
-                            });
+                                bool isFromStudent = random.Next(0, 2) == 0;
+
+                                messages.Add(new EduRate.Models.Message
+                                {
+                                    Content = messageContents[random.Next(messageContents.Length)],
+                                    SentAt = DateTime.Now.AddDays(-random.Next(1, 30)),
+                                    IsRead = random.Next(0, 2) == 0,
+                                    SenderRole = isFromStudent ? "Student" : "Teacher",
+                                    StudentId = studentsList[random.Next(studentsList.Count)].Id,
+                                    TeacherId = teachersList[random.Next(teachersList.Count)].Id
+                                });
+                            }
+                            await context.Messages.AddRangeAsync(messages);
+                            await context.SaveChangesAsync();
                         }
-                        await context.Messages.AddRangeAsync(messages);
-                        await context.SaveChangesAsync();
                     }
 
                     // 12. Seed Notifications (الإشعارات)
@@ -321,20 +424,23 @@ namespace EduRate
                         var studentsList = await context.Students.ToListAsync();
                         var teachersList = await context.Teachers.ToListAsync();
 
-                        for (int i = 0; i < 100; i++)
+                        if (studentsList.Any() && teachersList.Any())
                         {
-                            notifications.Add(new EduRate.Models.Notification
+                            for (int i = 0; i < 100; i++)
                             {
-                                Title = "System Alert",
-                                Message = "You have a new update in your schedule.",
-                                IsRead = random.Next(0, 2) == 0,
-                                CreatedAt = DateTime.Now.AddDays(-random.Next(1, 10)),
-                                StudentId = random.Next(0, 2) == 0 ? studentsList[random.Next(studentsList.Count)].Id : null,
-                                TeacherId = random.Next(0, 2) == 0 ? teachersList[random.Next(teachersList.Count)].Id : null
-                            });
+                                notifications.Add(new EduRate.Models.Notification
+                                {
+                                    Title = "System Alert",
+                                    Message = "You have a new update in your schedule.",
+                                    IsRead = random.Next(0, 2) == 0,
+                                    CreatedAt = DateTime.Now.AddDays(-random.Next(1, 10)),
+                                    StudentId = random.Next(0, 2) == 0 ? studentsList[random.Next(studentsList.Count)].Id : null,
+                                    TeacherId = random.Next(0, 2) == 0 ? teachersList[random.Next(teachersList.Count)].Id : null
+                                });
+                            }
+                            await context.Notifications.AddRangeAsync(notifications);
+                            await context.SaveChangesAsync();
                         }
-                        await context.Notifications.AddRangeAsync(notifications);
-                        await context.SaveChangesAsync();
                     }
 
                     // 13. Seed PromoCodes (الكوبونات)
@@ -358,20 +464,23 @@ namespace EduRate
                         var teachersList = await context.Teachers.ToListAsync();
                         var centersList = await context.Centers.ToListAsync();
 
-                        for (int i = 0; i < 100; i++)
+                        if (studentsList.Any() && teachersList.Any() && centersList.Any())
                         {
-                            bool isTeacherFavorite = random.Next(0, 2) == 0;
-
-                            favorites.Add(new EduRate.Models.StudentFavorite
+                            for (int i = 0; i < 100; i++)
                             {
-                                StudentId = studentsList[random.Next(studentsList.Count)].Id,
-                                TeacherId = isTeacherFavorite ? teachersList[random.Next(teachersList.Count)].Id : null,
-                                CenterId = !isTeacherFavorite ? centersList[random.Next(centersList.Count)].Id : null,
-                                CreatedAt = DateTime.Now.AddDays(-random.Next(1, 60))
-                            });
+                                bool isTeacherFavorite = random.Next(0, 2) == 0;
+
+                                favorites.Add(new EduRate.Models.StudentFavorite
+                                {
+                                    StudentId = studentsList[random.Next(studentsList.Count)].Id,
+                                    TeacherId = isTeacherFavorite ? teachersList[random.Next(teachersList.Count)].Id : null,
+                                    CenterId = !isTeacherFavorite ? centersList[random.Next(centersList.Count)].Id : null,
+                                    CreatedAt = DateTime.Now.AddDays(-random.Next(1, 60))
+                                });
+                            }
+                            await context.StudentFavorites.AddRangeAsync(favorites);
+                            await context.SaveChangesAsync();
                         }
-                        await context.StudentFavorites.AddRangeAsync(favorites);
-                        await context.SaveChangesAsync();
                     }
                 }
                 catch (Exception ex)
