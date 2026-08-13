@@ -7,11 +7,5 @@
         public int CenterId { get; set; }
     }
 
-    // --- Subject DTOs ---
-    public class SubjectDto
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string EducationalStage { get; set; }
-    }
+  
 }

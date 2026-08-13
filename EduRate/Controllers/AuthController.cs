@@ -122,8 +122,8 @@ namespace EduRate.Controllers
                 }
                 else if (user.UserType == "Teacher")
                 {
-                    // بما إن المدرس ملوش عمود Email في الموديل، هنبحث عنه بالاسم اللي اتسجل بيه
-                    var teacher = await _context.Teachers.FirstOrDefaultAsync(t => t.Name == user.UserName || t.Name.Contains("Test Teacher"));
+                    // بما إن المدرس ملوش عمود Email في الموديل، هنبحث عنه بالاسم
+                    var teacher = await _context.Teachers.FirstOrDefaultAsync(t => t.Name == user.UserName);
                     if (teacher != null) profileId = teacher.Id;
                 }
 
@@ -131,7 +131,8 @@ namespace EduRate.Controllers
                 {
                     new Claim(ClaimTypes.Name, user.UserName),
                     new Claim(ClaimTypes.Email, user.Email),
-                    new Claim("UserType", user.UserType ?? "User"),
+                    // 💡 التعديل هنا: استخدمنا ClaimTypes.Role عشان [Authorize] يفهمه!
+                    new Claim(ClaimTypes.Role, user.UserType ?? "User"),
                     new Claim("ProfileId", profileId.ToString()),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 };
@@ -157,4 +158,4 @@ namespace EduRate.Controllers
             return Unauthorized("Invalid Email or Password");
         }
     }
-}
+    }

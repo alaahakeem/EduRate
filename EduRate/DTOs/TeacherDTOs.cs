@@ -63,7 +63,7 @@ namespace EduRate.DTOs
         public decimal PricePerSession { get; set; }
     }
 
-    public class ReviewReadDto
+    public class ReviewwReadDto
     {
         public int Id { get; set; }
         public int Rating { get; set; }

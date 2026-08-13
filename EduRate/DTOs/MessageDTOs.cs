@@ -1,13 +1,8 @@
-﻿using System;
-
-namespace EduRate.DTOs
+﻿namespace EduRate.DTOs
 {
-    // --- Message DTOs ---
     public class SendMessageDto
     {
-        public int StudentId { get; set; }
-        public int TeacherId { get; set; }
-        public string SenderRole { get; set; } // "Student" or "Teacher"
+        public int ReceiverId { get; set; } // رقم الشخص اللي هيستقبل الرسالة (سواء كان طالب أو مدرس)
         public string Content { get; set; }
     }
 

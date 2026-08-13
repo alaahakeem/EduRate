@@ -67,8 +67,7 @@ namespace EduRate.DTOs
 
     public class CenterReviewCreateDto
     {
-        [Required]
-        public int StudentId { get; set; }
+        
         [Required]
         [Range(1, 5)]
         public int Rating { get; set; }

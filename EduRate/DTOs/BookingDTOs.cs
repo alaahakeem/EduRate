@@ -4,7 +4,7 @@ namespace EduRate.DTOs
 {
     public class BookingCreateDto
     {
-        public int StudentId { get; set; }
+        
         public int SessionId { get; set; }
     }
 

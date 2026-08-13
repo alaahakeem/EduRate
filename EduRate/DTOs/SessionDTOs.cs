@@ -10,7 +10,7 @@ namespace EduRate.DTOs
         public decimal Price { get; set; }
         public string EducationalStage { get; set; } = string.Empty;
         public int CenterId { get; set; }
-        public int TeacherId { get; set; }
+        
     }
 
     public class SessionReadDto

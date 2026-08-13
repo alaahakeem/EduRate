@@ -5,11 +5,14 @@ using EduRate.DTOs;
 using EduRate.Models;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace EduRate.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Student,Teacher")] // 💡 مسموح للطلاب والمدرسين بس
     public class MessagesController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -22,15 +25,35 @@ namespace EduRate.Controllers
         [HttpPost]
         public async Task<IActionResult> SendMessage([FromBody] SendMessageDto dto)
         {
+            // 1. استخراج بيانات المرسل من التوكن أوتوماتيك
+            var profileIdClaim = User.FindFirst("ProfileId")?.Value;
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(profileIdClaim) || !int.TryParse(profileIdClaim, out int senderId) || string.IsNullOrEmpty(roleClaim))
+            {
+                return Unauthorized("Invalid token.");
+            }
+
+            // 2. تجهيز الرسالة
             var message = new Message
             {
-                StudentId = dto.StudentId,
-                TeacherId = dto.TeacherId,
-                SenderRole = dto.SenderRole,
                 Content = dto.Content,
                 SentAt = System.DateTime.Now,
-                IsRead = false
+                IsRead = false,
+                SenderRole = roleClaim // بناخد الرول من التوكن مش من اليوزر
             };
+
+            // 3. تحديد مين بيبعت لمين
+            if (roleClaim == "Student")
+            {
+                message.StudentId = senderId;
+                message.TeacherId = dto.ReceiverId;
+            }
+            else if (roleClaim == "Teacher")
+            {
+                message.TeacherId = senderId;
+                message.StudentId = dto.ReceiverId;
+            }
 
             _context.Messages.Add(message);
             await _context.SaveChangesAsync();
@@ -38,11 +61,22 @@ namespace EduRate.Controllers
             return Ok("Message sent successfully.");
         }
 
-        [HttpGet("conversation/{studentId}/{teacherId}")]
-        public async Task<IActionResult> GetConversation(int studentId, int teacherId)
+        [HttpGet("conversation/{receiverId}")]
+        public async Task<IActionResult> GetConversation(int receiverId)
         {
+            var profileIdClaim = User.FindFirst("ProfileId")?.Value;
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(profileIdClaim) || !int.TryParse(profileIdClaim, out int myId))
+            {
+                return Unauthorized("Invalid token.");
+            }
+
+            int searchStudentId = roleClaim == "Student" ? myId : receiverId;
+            int searchTeacherId = roleClaim == "Teacher" ? myId : receiverId;
+
             var messages = await _context.Messages
-                .Where(m => m.StudentId == studentId && m.TeacherId == teacherId)
+                .Where(m => m.StudentId == searchStudentId && m.TeacherId == searchTeacherId)
                 .OrderBy(m => m.SentAt)
                 .Select(m => new MessageDto
                 {

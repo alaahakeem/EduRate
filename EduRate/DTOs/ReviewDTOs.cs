@@ -6,8 +6,7 @@ namespace EduRate.DTOs
     // 1. الداتا اللي بنستقبلها وقت التقييم
     public class ReviewCreateDto
     {
-        [Required]
-        public int StudentId { get; set; }
+        // ❌ شلنا الـ StudentId من هنا عشان هنجيبه من التوكن في الكنترولر للأمان
 
         // جهات التقييم (بنسمح بواحدة بس منهم)
         public int? TeacherId { get; set; }
@@ -24,7 +23,7 @@ namespace EduRate.DTOs
         public bool IsAnonymous { get; set; }
     }
 
-    // 2. الداتا اللي بنرجعها (للمدرس أو السنتر عشان يشوفوها)
+    // 2. الداتا اللي بنرجعها (تفضل زي ما هي بدون أي تغيير)
     public class ReviewReaddDto
     {
         public int Id { get; set; }
@@ -32,7 +31,6 @@ namespace EduRate.DTOs
         public string Comment { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
 
-        // هنا هنعرض الاسم الحقيقي أو كلمة "طالب مجهول" بناءً على اختيار الطالب
         public string StudentName { get; set; } = string.Empty;
         public bool IsAnonymous { get; set; }
         public bool CanEdit { get; set; }

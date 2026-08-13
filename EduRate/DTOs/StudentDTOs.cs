@@ -96,4 +96,18 @@ namespace EduRate.DTOs
         public int? TeacherId { get; set; }
         public int? CenterId { get; set; }
     }
+    namespace EduRate.DTOs
+    {
+        public class StudentProfileDto
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+            public string Email { get; set; }
+            public string EducationalStage { get; set; }
+            public string Governorate { get; set; }
+            public string Region { get; set; }
+            public double WalletBalance { get; set; }
+            public int RewardPoints { get; set; }
+        }
+    }
 }

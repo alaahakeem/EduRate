@@ -6,11 +6,14 @@ using EduRate.DTOs;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace EduRate.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // 💡 قفلنا الكنترولر على أي حد مسجل دخول (طالب، مدرس، أدمن)
     public class NotificationsController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -21,34 +24,50 @@ namespace EduRate.Controllers
         }
 
         // ==========================================
-        // 💡 دالة مساعدة عشان نحدد إحنا بنجيب إشعارات مين بالظبط (بدون تكرار كود)
+        // 💡 1. Helper Method: سحب بيانات اليوزر ونوعه من التوكن
         // ==========================================
-        private IQueryable<Notification> GetUserNotificationsQuery(string userType, int userId)
+        private (int UserId, string Role)? GetUserDetailsFromToken()
+        {
+            var profileIdClaim = User.FindFirst("ProfileId")?.Value;
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (!string.IsNullOrEmpty(profileIdClaim) && int.TryParse(profileIdClaim, out int userId) && !string.IsNullOrEmpty(roleClaim))
+            {
+                return (userId, roleClaim);
+            }
+            return null;
+        }
+
+        // ==========================================
+        // 💡 2. Helper Method: الفلترة حسب نوع اليوزر
+        // ==========================================
+        private IQueryable<Notification> GetUserNotificationsQuery(string role, int userId)
         {
             var query = _context.Notifications.AsQueryable();
 
-            return userType.ToLower() switch
+            return role switch
             {
-                "student" => query.Where(n => n.StudentId == userId),
-                "teacher" => query.Where(n => n.TeacherId == userId),
-                "center" => query.Where(n => n.CenterId == userId),
-                _ => null       
-                // لو كتب نوع غلط
+                "Student" => query.Where(n => n.StudentId == userId),
+                "Teacher" => query.Where(n => n.TeacherId == userId),
+                // لو عاملة Role للسنتر ضيفيه هنا، مثلاً "Center"
+                _ => query.Where(n => false) // يرجع فاضي لو الرول مش معروف
             };
         }
 
         // ==========================================
-        // 1. GET: جلب أحدث 50 إشعار للمستخدم
+        // 3. GET: جلب أحدث 50 إشعار للمستخدم (من التوكن)
         // ==========================================
-        [HttpGet("{userType}/{userId}")]
-        public async Task<ActionResult<IEnumerable<NotificationDto>>> GetNotifications(string userType, int userId)
+        [HttpGet("my-notifications")]
+        public async Task<ActionResult<IEnumerable<NotificationDto>>> GetMyNotifications()
         {
-            var query = GetUserNotificationsQuery(userType, userId);
-            if (query == null) return BadRequest(new { message = "نوع المستخدم غير صحيح. يجب أن يكون student, teacher, أو center." });
+            var userDetails = GetUserDetailsFromToken();
+            if (userDetails == null) return Unauthorized("Invalid token.");
+
+            var query = GetUserNotificationsQuery(userDetails.Value.Role, userDetails.Value.UserId);
 
             var notifications = await query
                 .OrderByDescending(n => n.CreatedAt)
-                .Take(50) // بنجيب أحدث 50 بس عشان الأداء
+                .Take(50)
                 .Select(n => new NotificationDto
                 {
                     Id = n.Id,
@@ -63,26 +82,34 @@ namespace EduRate.Controllers
         }
 
         // ==========================================
-        // 2. GET: جلب عدد الإشعارات غير المقروءة (عشان أيقونة الجرس)
+        // 4. GET: جلب عدد الإشعارات غير المقروءة 
         // ==========================================
-        [HttpGet("{userType}/{userId}/unread-count")]
-        public async Task<ActionResult> GetUnreadCount(string userType, int userId)
+        [HttpGet("my-unread-count")]
+        public async Task<ActionResult> GetMyUnreadCount()
         {
-            var query = GetUserNotificationsQuery(userType, userId);
-            if (query == null) return BadRequest(new { message = "نوع المستخدم غير صحيح" });
+            var userDetails = GetUserDetailsFromToken();
+            if (userDetails == null) return Unauthorized("Invalid token.");
 
+            var query = GetUserNotificationsQuery(userDetails.Value.Role, userDetails.Value.UserId);
             var count = await query.CountAsync(n => !n.IsRead);
+
             return Ok(new { unreadCount = count });
         }
 
         // ==========================================
-        // 3. PUT: تحديد إشعار معين كمقروء
+        // 5. PUT: تحديد إشعار معين كمقروء
         // ==========================================
         [HttpPut("{id}/read")]
         public async Task<IActionResult> MarkAsRead(int id)
         {
-            var notification = await _context.Notifications.FindAsync(id);
-            if (notification == null) return NotFound(new { message = "الإشعار غير موجود" });
+            var userDetails = GetUserDetailsFromToken();
+            if (userDetails == null) return Unauthorized("Invalid token.");
+
+            // 💡 الأمان هنا: بنتأكد إن الإشعار ده فعلاً يخص اليوزر اللي بيحاول يخليه مقروء!
+            var query = GetUserNotificationsQuery(userDetails.Value.Role, userDetails.Value.UserId);
+            var notification = await query.FirstOrDefaultAsync(n => n.Id == id);
+
+            if (notification == null) return NotFound(new { message = "الإشعار غير موجود أو لا تملك صلاحية تعديله." });
 
             notification.IsRead = true;
             await _context.SaveChangesAsync();
@@ -91,14 +118,15 @@ namespace EduRate.Controllers
         }
 
         // ==========================================
-        // 4. PUT: تحديد كل إشعارات المستخدم كمقروءة
+        // 6. PUT: تحديد كل إشعارات المستخدم كمقروءة
         // ==========================================
-        [HttpPut("{userType}/{userId}/read-all")]
-        public async Task<IActionResult> MarkAllAsRead(string userType, int userId)
+        [HttpPut("read-all")]
+        public async Task<IActionResult> MarkAllAsRead()
         {
-            var query = GetUserNotificationsQuery(userType, userId);
-            if (query == null) return BadRequest(new { message = "نوع المستخدم غير صحيح" });
+            var userDetails = GetUserDetailsFromToken();
+            if (userDetails == null) return Unauthorized("Invalid token.");
 
+            var query = GetUserNotificationsQuery(userDetails.Value.Role, userDetails.Value.UserId);
             var unreadNotifications = await query.Where(n => !n.IsRead).ToListAsync();
 
             if (!unreadNotifications.Any()) return Ok(new { message = "لا يوجد إشعارات جديدة" });

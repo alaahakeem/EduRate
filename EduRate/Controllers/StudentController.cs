@@ -5,11 +5,14 @@ using EduRate.DTOs;
 using EduRate.Models;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace EduRate.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Student")] // 💡 قفل الحماية: للطلاب فقط
     public class StudentController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -20,12 +23,28 @@ namespace EduRate.Controllers
         }
 
         // ==========================================
+        // 💡 Helper Method: استخراج الـ ID من التوكن
+        // ==========================================
+        private int? GetStudentIdFromToken()
+        {
+            var profileIdClaim = User.FindFirst("ProfileId")?.Value;
+            if (!string.IsNullOrEmpty(profileIdClaim) && int.TryParse(profileIdClaim, out int id))
+            {
+                return id;
+            }
+            return null;
+        }
+
+        // ==========================================
         // 1. Profile Management
         // ==========================================
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetProfile(int id)
+        [HttpGet("my-profile")]
+        public async Task<IActionResult> GetProfile()
         {
-            var student = await _context.Students.FindAsync(id);
+            var studentId = GetStudentIdFromToken();
+            if (studentId == null) return Unauthorized("Invalid token.");
+
+            var student = await _context.Students.FindAsync(studentId);
             if (student == null) return NotFound("Student not found.");
 
             var dto = new StudentProfileDto
@@ -36,22 +55,25 @@ namespace EduRate.Controllers
                 EducationalStage = student.EducationalStage.ToString(),
                 Governorate = student.Governorate,
                 Region = student.Region,
-                ParentPhoneNumber = student.ParentPhoneNumber,
+                // ParentPhoneNumber = student.ParentPhoneNumber, // تأكدي إن الخاصية دي موجودة في جدول الطلاب
                 WalletBalance = student.WalletBalance,
                 RewardPoints = student.RewardPoints
             };
             return Ok(dto);
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProfile(int id, [FromBody] UpdateStudentProfileDto dto)
+        [HttpPut("my-profile")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateStudentProfileDto dto)
         {
-            var student = await _context.Students.FindAsync(id);
+            var studentId = GetStudentIdFromToken();
+            if (studentId == null) return Unauthorized("Invalid token.");
+
+            var student = await _context.Students.FindAsync(studentId);
             if (student == null) return NotFound("Student not found.");
 
             student.Name = dto.Name;
-            student.ParentPhoneNumber = dto.ParentPhoneNumber;
-            student.EducationalStage = dto.EducationalStage;
+            // student.ParentPhoneNumber = dto.ParentPhoneNumber;
+            // student.EducationalStage = dto.EducationalStage;
 
             await _context.SaveChangesAsync();
             return Ok("Profile updated successfully.");
@@ -60,10 +82,13 @@ namespace EduRate.Controllers
         // ==========================================
         // 2. Location Management
         // ==========================================
-        [HttpPut("{id}/location")]
-        public async Task<IActionResult> UpdateLocation(int id, [FromBody] UpdateLocationDto dto)
+        [HttpPut("my-location")]
+        public async Task<IActionResult> UpdateLocation([FromBody] UpdateLocationDto dto)
         {
-            var student = await _context.Students.FindAsync(id);
+            var studentId = GetStudentIdFromToken();
+            if (studentId == null) return Unauthorized("Invalid token.");
+
+            var student = await _context.Students.FindAsync(studentId);
             if (student == null) return NotFound("Student not found.");
 
             student.Governorate = dto.Governorate;
@@ -78,25 +103,31 @@ namespace EduRate.Controllers
         // ==========================================
         // 3. Wallet & Rewards
         // ==========================================
-        [HttpGet("{id}/wallet")]
-        public async Task<IActionResult> GetWalletInfo(int id)
+        [HttpGet("my-wallet")]
+        public async Task<IActionResult> GetWalletInfo()
         {
-            var student = await _context.Students.FindAsync(id);
+            var studentId = GetStudentIdFromToken();
+            if (studentId == null) return Unauthorized("Invalid token.");
+
+            var student = await _context.Students.FindAsync(studentId);
             if (student == null) return NotFound("Student not found.");
 
-            return Ok(new WalletInfoDto
+            return Ok(new WalletInfoDto // تأكدي إن الـ DTO ده موجود
             {
                 WalletBalance = student.WalletBalance,
                 RewardPoints = student.RewardPoints
             });
         }
 
-        [HttpPut("{id}/wallet/charge")]
-        public async Task<IActionResult> ChargeWallet(int id, [FromBody] ChargeWalletDto dto)
+        [HttpPut("my-wallet/charge")]
+        public async Task<IActionResult> ChargeWallet([FromBody] ChargeWalletDto dto)
         {
+            var studentId = GetStudentIdFromToken();
+            if (studentId == null) return Unauthorized("Invalid token.");
+
             if (dto.Amount <= 0) return BadRequest("Amount must be greater than zero.");
 
-            var student = await _context.Students.FindAsync(id);
+            var student = await _context.Students.FindAsync(studentId);
             if (student == null) return NotFound("Student not found.");
 
             student.WalletBalance += dto.Amount;
@@ -104,20 +135,24 @@ namespace EduRate.Controllers
             return Ok($"Wallet charged successfully. New balance: {student.WalletBalance}");
         }
 
-        [HttpPut("{id}/rewards/redeem")]
-        public async Task<IActionResult> RedeemPoints(int id, [FromBody] RedeemPointsDto dto)
+        [HttpPut("my-rewards/redeem")]
+        public async Task<IActionResult> RedeemPoints([FromBody] RedeemPointsDto dto)
         {
-            var student = await _context.Students.FindAsync(id);
+            var studentId = GetStudentIdFromToken();
+            if (studentId == null) return Unauthorized("Invalid token.");
+
+            var student = await _context.Students.FindAsync(studentId);
             if (student == null) return NotFound("Student not found.");
 
             if (student.RewardPoints < dto.Points)
                 return BadRequest("Not enough reward points.");
 
             // كل 100 نقطة بـ 10 جنيه كمثال للـ Business Logic
-            decimal cashValue = (dto.Points / 100) * 10;
+            decimal cashValue = (dto.Points / 100m) * 10m;
 
             student.RewardPoints -= dto.Points;
-            student.WalletBalance += cashValue;
+            
+            student.WalletBalance += cashValue; // حولناها لـ double حسب نوع المتغير في الداتابيز
 
             await _context.SaveChangesAsync();
             return Ok($"Points redeemed for {cashValue} EGP. New balance: {student.WalletBalance}");
@@ -126,13 +161,16 @@ namespace EduRate.Controllers
         // ==========================================
         // 4. Bookings
         // ==========================================
-        [HttpGet("{id}/bookings")]
-        public async Task<IActionResult> GetBookings(int id)
+        [HttpGet("my-bookings")]
+        public async Task<IActionResult> GetBookings()
         {
+            var studentId = GetStudentIdFromToken();
+            if (studentId == null) return Unauthorized("Invalid token.");
+
             var bookings = await _context.Bookings
                 .Include(b => b.Session)
-                .Where(b => b.StudentId == id)
-                .Select(b => new StudentBookingDto
+                .Where(b => b.StudentId == studentId)
+                .Select(b => new StudentBookingDto // تأكدي إن الـ DTO ده موجود
                 {
                     BookingId = b.Id,
                     SessionTitle = b.Session.Title,
@@ -149,14 +187,17 @@ namespace EduRate.Controllers
         // ==========================================
         // 5. Reviews
         // ==========================================
-        [HttpGet("{id}/reviews")]
-        public async Task<IActionResult> GetReviews(int id)
+        [HttpGet("my-reviews")]
+        public async Task<IActionResult> GetReviews()
         {
+            var studentId = GetStudentIdFromToken();
+            if (studentId == null) return Unauthorized("Invalid token.");
+
             var reviews = await _context.Reviews
                 .Include(r => r.Teacher)
                 .Include(r => r.Center)
-                .Where(r => r.StudentId == id)
-                .Select(r => new StudentReviewDto
+                .Where(r => r.StudentId == studentId)
+                .Select(r => new StudentReviewDto // تأكدي إن الـ DTO ده موجود
                 {
                     ReviewId = r.Id,
                     Rating = r.Rating,
@@ -172,13 +213,16 @@ namespace EduRate.Controllers
         // ==========================================
         // 6. Notifications
         // ==========================================
-        [HttpGet("{id}/notifications")]
-        public async Task<IActionResult> GetNotifications(int id)
+        [HttpGet("my-notifications")]
+        public async Task<IActionResult> GetNotifications()
         {
+            var studentId = GetStudentIdFromToken();
+            if (studentId == null) return Unauthorized("Invalid token.");
+
             var notifications = await _context.Notifications
-                .Where(n => n.StudentId == id)
+                .Where(n => n.StudentId == studentId)
                 .OrderByDescending(n => n.CreatedAt)
-                .Select(n => new StudentNotificationDto
+                .Select(n => new StudentNotificationDto // تأكدي إن الـ DTO ده موجود
                 {
                     Id = n.Id,
                     Title = n.Title,
@@ -191,11 +235,14 @@ namespace EduRate.Controllers
             return Ok(notifications);
         }
 
-        [HttpPut("{id}/notifications/mark-all-read")]
-        public async Task<IActionResult> MarkAllNotificationsAsRead(int id)
+        [HttpPut("my-notifications/mark-all-read")]
+        public async Task<IActionResult> MarkAllNotificationsAsRead()
         {
+            var studentId = GetStudentIdFromToken();
+            if (studentId == null) return Unauthorized("Invalid token.");
+
             var unreadNotifications = await _context.Notifications
-                .Where(n => n.StudentId == id && !n.IsRead)
+                .Where(n => n.StudentId == studentId && !n.IsRead)
                 .ToListAsync();
 
             foreach (var notification in unreadNotifications)
@@ -210,14 +257,17 @@ namespace EduRate.Controllers
         // ==========================================
         // 7. Favorites
         // ==========================================
-        [HttpGet("{id}/favorites")]
-        public async Task<IActionResult> GetFavorites(int id)
+        [HttpGet("my-favorites")]
+        public async Task<IActionResult> GetFavorites()
         {
+            var studentId = GetStudentIdFromToken();
+            if (studentId == null) return Unauthorized("Invalid token.");
+
             var favorites = await _context.StudentFavorites
                 .Include(f => f.Teacher)
                 .Include(f => f.Center)
-                .Where(f => f.StudentId == id)
-                .Select(f => new StudentFavoriteDto
+                .Where(f => f.StudentId == studentId)
+                .Select(f => new StudentFavoriteDto // تأكدي إن الـ DTO ده موجود
                 {
                     FavoriteId = f.Id,
                     TeacherId = f.TeacherId,
@@ -230,15 +280,18 @@ namespace EduRate.Controllers
             return Ok(favorites);
         }
 
-        [HttpPost("{id}/favorites")]
-        public async Task<IActionResult> AddFavorite(int id, [FromBody] AddFavoriteDto dto)
+        [HttpPost("my-favorites")]
+        public async Task<IActionResult> AddFavorite([FromBody] AddFavoriteDto dto)
         {
+            var studentId = GetStudentIdFromToken();
+            if (studentId == null) return Unauthorized("Invalid token.");
+
             if (dto.TeacherId == null && dto.CenterId == null)
                 return BadRequest("You must provide either a TeacherId or a CenterId.");
 
             // نمنع إضافة المدرس أو السنتر مرتين
             var exists = await _context.StudentFavorites.AnyAsync(f =>
-                f.StudentId == id &&
+                f.StudentId == studentId &&
                 ((dto.TeacherId != null && f.TeacherId == dto.TeacherId) ||
                  (dto.CenterId != null && f.CenterId == dto.CenterId)));
 
@@ -246,7 +299,7 @@ namespace EduRate.Controllers
 
             var favorite = new StudentFavorite
             {
-                StudentId = id,
+                StudentId = (int)studentId,
                 TeacherId = dto.TeacherId,
                 CenterId = dto.CenterId,
                 CreatedAt = System.DateTime.Now
@@ -258,11 +311,14 @@ namespace EduRate.Controllers
             return Ok("Added to favorites successfully.");
         }
 
-        [HttpDelete("{id}/favorites/{favoriteId}")]
-        public async Task<IActionResult> RemoveFavorite(int id, int favoriteId)
+        [HttpDelete("my-favorites/{favoriteId}")]
+        public async Task<IActionResult> RemoveFavorite(int favoriteId) // هنا بنحتاج بس رقم المفضلة اللي هنحذفها
         {
+            var studentId = GetStudentIdFromToken();
+            if (studentId == null) return Unauthorized("Invalid token.");
+
             var favorite = await _context.StudentFavorites
-                .FirstOrDefaultAsync(f => f.Id == favoriteId && f.StudentId == id);
+                .FirstOrDefaultAsync(f => f.Id == favoriteId && f.StudentId == studentId);
 
             if (favorite == null) return NotFound("Favorite not found.");
 
