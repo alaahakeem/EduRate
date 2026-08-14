@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using EduRate.Data;
 using EduRate.DTOs;
 using EduRate.Models;
+using EduRate.Hubs; // 💡 ضفنا مسار السنترال
+using Microsoft.AspNetCore.SignalR; // 💡 ضفنا مكتبة SignalR
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -12,14 +14,16 @@ namespace EduRate.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Student,Teacher")] // 💡 مسموح للطلاب والمدرسين بس
+    [Authorize(Roles = "Student,Teacher")]
     public class MessagesController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IHubContext<ChatHub> _hubContext; // 💡 عرفنا السنترال هنا
 
-        public MessagesController(AppDbContext context)
+        public MessagesController(AppDbContext context, IHubContext<ChatHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext; // 💡 حقناه في الـ Constructor
         }
 
         [HttpPost]
@@ -40,7 +44,7 @@ namespace EduRate.Controllers
                 Content = dto.Content,
                 SentAt = System.DateTime.Now,
                 IsRead = false,
-                SenderRole = roleClaim // بناخد الرول من التوكن مش من اليوزر
+                SenderRole = roleClaim
             };
 
             // 3. تحديد مين بيبعت لمين
@@ -58,7 +62,11 @@ namespace EduRate.Controllers
             _context.Messages.Add(message);
             await _context.SaveChangesAsync();
 
-            return Ok("Message sent successfully.");
+            // 💡 4. السحر: إرسال الرسالة "لايف" للطرف التاني عبر SignalR
+            await _hubContext.Clients.User(dto.ReceiverId.ToString())
+                             .SendAsync("ReceiveMessage", senderId, dto.Content);
+
+            return Ok(new { message = "Message sent successfully." });
         }
 
         [HttpGet("conversation/{receiverId}")]

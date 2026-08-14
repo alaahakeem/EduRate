@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using EduRate.Models;
+using EduRate.Hubs; // 💡 إضافة مسار الـ Hubs
 
 namespace EduRate
 {
@@ -30,6 +31,20 @@ namespace EduRate
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddSignalR(); // 💡 خدمة SignalR متسجلة تمام هنا
+
+                                           // 💡 السماح للفرونت إند بالاتصال بالباك إند
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend", policy =>
+                {
+                    policy.WithOrigins("http://localhost:3000", "http://localhost:5173") // بورتات Next.js و React و Vite
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials(); // 💡 السطر ده مهم جدااااً عشان SignalR يشتغل ويقبل التوكن
+                });
+            });
+
             builder.Services.AddHttpClient<IPaymobService, PaymobService>();
 
             builder.Services.AddDbContext<AppDbContext>(options =>
@@ -61,6 +76,23 @@ namespace EduRate
                     ValidAudience = builder.Configuration["JWT:Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]))
                 };
+
+                // 💡 التعديل هنا: صيد التوكن الخاص بـ SignalR من الرابط عشان الـ WebSockets
+                o.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+
+                        // لو الريكويست رايح للـ Hub وفيه توكن في الرابط، اقرأه!
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chathub"))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
             });
             // ==============================================================================
 
@@ -81,12 +113,17 @@ namespace EduRate
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
+            app.UseCors("AllowFrontend"); // 💡 تفعيل بوابة العبور
 
             // 💡 2. تفعيل المصادقة (لازم يكون قبل سطر الـ Authorization)
             app.UseAuthentication();
 
             app.UseAuthorization();
+
             app.MapControllers();
+
+            // 💡 التعديل هنا: فتح مسار للـ ChatHub للفرونت إند
+            app.MapHub<ChatHub>("/chathub");
 
             // === بذر الداتا الكبيرة والكاملة مباشرة ===
             // ==============================================================================
@@ -126,7 +163,6 @@ namespace EduRate
                             {
                                 Name = "Test Student",
                                 Email = "student@edurate.com",
-                                // 💡 هنا التعديل: إديناه قيمة افتراضية للطالب الوهمي عشان الإيرور يختفي
                                 EducationalStage = (EduRate.Models.EducationalStage)1,
                                 WalletBalance = 500,
                                 RewardPoints = 100
