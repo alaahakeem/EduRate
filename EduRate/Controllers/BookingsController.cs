@@ -192,6 +192,10 @@ namespace EduRate.Controllers
             if (booking.Status == "Cancelled")
                 return BadRequest("الحجز ملغي بالفعل.");
 
+            // 💡 حماية البيزنس: منع الإلغاء لو الحصة بدأت أو خلصت
+            if (booking.Session.StartTime <= DateTime.Now)
+                return BadRequest("لا يمكن إلغاء الحجز واسترداد المبلغ لأن الحصة قد بدأت أو انتهت بالفعل.");
+
             // 💡 هندسة الأموال: إرجاع الفلوس لمحفظة الطالب
             var student = await _context.Students.FindAsync(studentId);
             student.WalletBalance += booking.Session.Price;
