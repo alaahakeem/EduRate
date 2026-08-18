@@ -32,13 +32,66 @@ namespace EduRate.Controllers
         }
 
         // 💡 بنجيب رقم الطالب من التوكن عشان التقييمات
-        private int? GetStudentIdFromToken()
+        // وهنستخدمه كمان للسنتر عشان نجيب بروفايله الخاص
+        private int? GetProfileIdFromToken()
         {
             var profileIdClaim = User.FindFirst("ProfileId")?.Value;
             if (!string.IsNullOrEmpty(profileIdClaim) && int.TryParse(profileIdClaim, out int id))
                 return id;
             return null;
         }
+
+        #region 💡 لوحة تحكم السنتر (Endpoints جديدة خاصة بالسنتر)
+
+        [HttpGet("my-profile")]
+        [Authorize(Roles = "Center")]
+        public async Task<IActionResult> GetMyProfile()
+        {
+            var centerId = GetProfileIdFromToken();
+            if (centerId == null) return Unauthorized();
+
+            var center = await _context.Centers.FirstOrDefaultAsync(c => c.Id == centerId);
+            if (center == null) return NotFound("لم يتم العثور على بيانات السنتر.");
+
+            return Ok(center);
+        }
+
+        [HttpPut("my-profile")]
+        [Authorize(Roles = "Center")]
+        public async Task<IActionResult> UpdateMyProfile([FromBody] CenterUpdateDto dto)
+        {
+            var centerId = GetProfileIdFromToken();
+            if (centerId == null) return Unauthorized();
+
+            var center = await _context.Centers.FirstOrDefaultAsync(c => c.Id == centerId);
+            if (center == null) return NotFound();
+
+            center.Name = dto.Name ?? center.Name;
+            center.Address = dto.Location ?? center.Address;
+            center.Latitude = dto.Latitude ?? center.Latitude;
+            center.Longitude = dto.Longitude ?? center.Longitude;
+
+            await _context.SaveChangesAsync();
+            return Ok(center);
+        }
+
+        [HttpGet("my-sessions")]
+        [Authorize(Roles = "Center")]
+        public async Task<IActionResult> GetMySessions()
+        {
+            var centerId = GetProfileIdFromToken();
+            if (centerId == null) return Unauthorized();
+
+            // بيفترض إن عندك جدول Sessions مربوط بـ CenterId
+            var sessions = await _context.Sessions
+                .Where(s => s.CenterId == centerId)
+                .Include(s => s.Teacher)
+                .ToListAsync();
+
+            return Ok(sessions);
+        }
+
+        #endregion
 
         #region 1. CRUD (الأساسيات)
 
@@ -129,7 +182,7 @@ namespace EduRate.Controllers
         [Authorize(Roles = "Student")] // 💡 الطالب بس اللي يقيم
         public async Task<IActionResult> AddCenterReview(int id, CenterReviewCreateDto dto)
         {
-            var studentId = GetStudentIdFromToken();
+            var studentId = GetProfileIdFromToken(); // 💡 استخدمنا الهيلبر بعد تعديل اسمه
             if (studentId == null) return Unauthorized("Invalid token.");
             if (!await _context.Centers.AnyAsync(c => c.Id == id)) return NotFound("Center not found.");
 

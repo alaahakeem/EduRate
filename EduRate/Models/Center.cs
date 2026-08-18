@@ -15,6 +15,9 @@ namespace EduRate.Models
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
 
+        // 💡 التعديل هنا: إضافة حقل UserId لربط السنتر بحساب الـ Login
+        public string? UserId { get; set; }
+
         // العلاقة مع جدول الوسيط (TeacherCenter)
         public ICollection<TeacherCenter> TeacherCenters { get; set; }
 

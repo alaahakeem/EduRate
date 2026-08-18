@@ -96,9 +96,25 @@ namespace EduRate.Controllers
                     Bio = "New Teacher",
                     TrustScore = 0,
                     YearsOfExperience = 0,
-                    SubjectId = dto.SubjectId.Value // 💡 ربطنا المدرس بالمادة
+                    SubjectId = dto.SubjectId.Value
                 };
                 _context.Teachers.Add(teacher);
+                await _context.SaveChangesAsync();
+            }
+            // =======================================================
+            // 💡 التعديل هنا: تسجيل بروفايل السنتر
+            // =======================================================
+            else if (dto.UserType == "Center")
+            {
+                var center = new Center
+                {
+                    Name = dto.Name,
+                    Description = "New Center",
+                    Address = "لم يتم التحديد",
+                    IsVerified = false,
+                    UserId = user.Id // ربطنا السنتر بحسابه
+                };
+                _context.Centers.Add(center);
                 await _context.SaveChangesAsync();
             }
 
@@ -114,7 +130,7 @@ namespace EduRate.Controllers
             {
                 int profileId = 0;
 
-                // 💡 هنجيب البروفايل بتاع الطالب أو المدرس عشان نرجع الـ ID بتاعه
+                // 💡 هنجيب البروفايل بتاع الطالب أو المدرس أو السنتر عشان نرجع الـ ID بتاعه
                 if (user.UserType == "Student")
                 {
                     var student = await _context.Students.FirstOrDefaultAsync(s => s.Email == user.Email);
@@ -125,6 +141,12 @@ namespace EduRate.Controllers
                     // بما إن المدرس ملوش عمود Email في الموديل، هنبحث عنه بالاسم
                     var teacher = await _context.Teachers.FirstOrDefaultAsync(t => t.Name == user.UserName);
                     if (teacher != null) profileId = teacher.Id;
+                }
+                // 💡 التعديل هنا: استرجاع الـ ID بتاع السنتر
+                else if (user.UserType == "Center")
+                {
+                    var center = await _context.Centers.FirstOrDefaultAsync(c => c.UserId == user.Id);
+                    if (center != null) profileId = center.Id;
                 }
 
                 var authClaims = new List<Claim>
@@ -158,4 +180,4 @@ namespace EduRate.Controllers
             return Unauthorized("Invalid Email or Password");
         }
     }
-    }
+}
