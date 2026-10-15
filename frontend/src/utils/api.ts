@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create an Axios instance configured to point to our ASP.NET Core API
 const api = axios.create({
-  baseURL: 'http://localhost:5232/api', // Pointing to the running ASP.NET Core port
+  baseURL: import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://edurate.runasp.net/api' : 'http://localhost:5232/api'),
   headers: {
     'Content-Type': 'application/json',
   },

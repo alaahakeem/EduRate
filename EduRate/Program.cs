@@ -38,7 +38,7 @@ namespace EduRate
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000", "http://localhost:5173") // بورتات Next.js و React و Vite
+                    policy.SetIsOriginAllowed(origin => true) // بورتات Next.js و React و Vite و Vercel
                           .AllowAnyHeader()
                           .AllowAnyMethod()
                           .AllowCredentials(); // 💡 السطر ده مهم جدااااً عشان SignalR يشتغل ويقبل التوكن
@@ -110,11 +110,8 @@ namespace EduRate
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            app.UseSwagger();
+            app.UseSwaggerUI();
 
             // app.UseHttpsRedirection(); // 💡 تم التعطيل مؤقتاً لتجنب مشاكل الـ CORS في التطوير المحلي
             app.UseStaticFiles();
