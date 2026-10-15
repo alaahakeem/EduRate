@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EduRate.Data;
 using EduRate.Models;
@@ -188,13 +188,19 @@ namespace EduRate.Controllers
             if (teacherId == null) return Unauthorized("Invalid token.");
 
             var bookings = await _context.Bookings
+                .Include(b => b.Student)
+                .Include(b => b.Session)
                 .Where(b => b.Session.TeacherId == teacherId)
                 .OrderByDescending(b => b.BookingDate)
                 .Select(b => new BookingReadDto
                 {
                     Id = b.Id,
                     BookingDate = b.BookingDate,
-                    StudentName = b.Student.Name
+                    StudentName = b.Student.Name,
+                    SessionTitle = b.Session.Title,
+                    EducationalStage = b.Session.EducationalStage,
+                    Price = b.Session.Price,
+                    IsConfirmed = b.Status == "Confirmed"
                 })
                 .ToListAsync();
 

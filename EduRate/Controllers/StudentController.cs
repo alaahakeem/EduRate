@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EduRate.Data;
 using EduRate.DTOs;
@@ -168,11 +168,16 @@ namespace EduRate.Controllers
             if (studentId == null) return Unauthorized("Invalid token.");
 
             var bookings = await _context.Bookings
-                .Include(b => b.Session)
+                .Include(b => b.Session).ThenInclude(s => s.Teacher)
+                .Include(b => b.Session).ThenInclude(s => s.Center)
                 .Where(b => b.StudentId == studentId)
-                .Select(b => new StudentBookingDto // تأكدي إن الـ DTO ده موجود
+                .Select(b => new StudentBookingDto
                 {
                     BookingId = b.Id,
+                    SessionId = b.SessionId,
+                    TeacherId = b.Session.TeacherId,
+                    TeacherName = b.Session.Teacher != null ? b.Session.Teacher.Name : null,
+                    CenterName = b.Session.Center != null ? b.Session.Center.Name : null,
                     SessionTitle = b.Session.Title,
                     StartTime = b.Session.StartTime,
                     EndTime = b.Session.EndTime,

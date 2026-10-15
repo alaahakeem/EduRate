@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EduRate.Models;
 
 namespace EduRate.DTOs
@@ -54,6 +54,10 @@ namespace EduRate.DTOs
     public class StudentBookingDto
     {
         public int BookingId { get; set; }
+        public int SessionId { get; set; }
+        public int? TeacherId { get; set; }
+        public string? TeacherName { get; set; }
+        public string? CenterName { get; set; }
         public string SessionTitle { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }

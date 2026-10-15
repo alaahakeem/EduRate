@@ -1,4 +1,4 @@
-﻿using EduRate.Data;
+using EduRate.Data;
 using EduRate.DTOs;
 using EduRate.Models;
 using EduRate.Services;
@@ -91,7 +91,7 @@ namespace EduRate.Controllers
                 StudentId = (int)studentId,
                 SessionId = dto.SessionId,
                 BookingDate = DateTime.Now,
-                Status = "Pending",
+                Status = "Confirmed",
                 IsAttended = false
             };
 

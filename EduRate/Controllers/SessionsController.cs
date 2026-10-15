@@ -1,4 +1,4 @@
-﻿using EduRate.Data;
+using EduRate.Data;
 using EduRate.DTOs;
 using EduRate.Models;
 using EduRate.Services;
@@ -167,7 +167,39 @@ namespace EduRate.Controllers
         }
 
         // ==========================================
-        // 4. GET: عرض الطلبة اللي حجزوا الحصة
+        // 4. GET: عرض الحصص الخاصة بي (للمدرس)
+        // ==========================================
+        [HttpGet("my-sessions")]
+        [Authorize(Roles = "Teacher")]
+        public async Task<ActionResult<IEnumerable<SessionReadDto>>> GetMySessions()
+        {
+            var teacherId = GetTeacherIdFromToken();
+            if (teacherId == null) return Unauthorized("Invalid token.");
+
+            var sessions = await _context.Sessions
+                .Include(s => s.Teacher)
+                .Include(s => s.Center)
+                .Where(s => s.TeacherId == teacherId)
+                .OrderByDescending(s => s.StartTime)
+                .Select(s => new SessionReadDto
+                {
+                    Id = s.Id,
+                    Title = s.Title,
+                    StartTime = s.StartTime,
+                    EndTime = s.EndTime,
+                    Price = s.Price,
+                    EducationalStage = s.EducationalStage,
+                    Status = s.Status,
+                    CenterName = s.Center.Name,
+                    TeacherName = s.Teacher.Name
+                })
+                .ToListAsync();
+
+            return Ok(sessions);
+        }
+
+        // ==========================================
+        // 5. GET: عرض الطلبة اللي حجزوا الحصة
         // ==========================================
         [HttpGet("{id}/bookings")]
         [Authorize(Roles = "Teacher,Admin")] // 💡 حماية للكشف

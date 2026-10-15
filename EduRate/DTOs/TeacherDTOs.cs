@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EduRate.DTOs
 {
@@ -77,6 +77,9 @@ namespace EduRate.DTOs
         public int Id { get; set; }
         public DateTime BookingDate { get; set; }
         public string StudentName { get; set; } = string.Empty;
+        public string SessionTitle { get; set; } = string.Empty;
+        public string EducationalStage { get; set; } = string.Empty;
+        public decimal Price { get; set; }
         public bool IsConfirmed { get; set; }
     }
 }

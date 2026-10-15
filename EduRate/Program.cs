@@ -1,4 +1,4 @@
-﻿using EduRate.Data;
+using EduRate.Data;
 using Microsoft.EntityFrameworkCore;
 using EduRate.Services;
 using System.Threading.Tasks;
@@ -53,7 +53,10 @@ namespace EduRate
             // ==============================================================================
             // 💡 1. تفعيل نظام الـ Identity والـ JWT 
             // ==============================================================================
-            builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+            {
+                options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+ ";
+            })
                 .AddEntityFrameworkStores<AppDbContext>()
                 .AddDefaultTokenProviders();
 
@@ -96,8 +99,10 @@ namespace EduRate
             });
             // ==============================================================================
 
-            // تسجيل خدمة الإشعارات
+            // تسجيل خدمة الإشعارات وخدمات الملفات والإيميلات
             builder.Services.AddScoped<INotificationService, NotificationService>();
+            builder.Services.AddScoped<IFileService, FileService>();
+            builder.Services.AddScoped<IEmailService, EmailService>();
 
             // تسجيل المنبه الذكي عشان يشتغل في الخلفية
             builder.Services.AddHostedService<SessionReminderService>();
@@ -111,7 +116,7 @@ namespace EduRate
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
+            // app.UseHttpsRedirection(); // 💡 تم التعطيل مؤقتاً لتجنب مشاكل الـ CORS في التطوير المحلي
             app.UseStaticFiles();
             app.UseCors("AllowFrontend"); // 💡 تفعيل بوابة العبور
 
@@ -185,6 +190,26 @@ namespace EduRate
                                 Bio = "Official Test Teacher Account",
                                 TrustScore = 100,
                                 YearsOfExperience = 5
+                            });
+                            await context.SaveChangesAsync();
+                        }
+                    }
+
+                    // 4. حساب السنتر التجريبي
+                    if (await userManager.FindByEmailAsync("center@edurate.com") == null)
+                    {
+                        var centerUser = new ApplicationUser { UserName = "test_center", Email = "center@edurate.com", UserType = "Center" };
+                        var result = await userManager.CreateAsync(centerUser, "Center@123");
+
+                        if (result.Succeeded && !await context.Centers.AnyAsync(c => c.Name == "سنتر الأوائل التعليمي"))
+                        {
+                            context.Centers.Add(new EduRate.Models.Center
+                            {
+                                Name = "سنتر الأوائل التعليمي",
+                                Description = "مركز تعليمي مجهز بأحدث وسائل الشاشات التفاعلية والتكييف المركزي",
+                                Address = "شارع التحرير، الدقي، الجيزة",
+                                IsVerified = true,
+                                UserId = centerUser.Id
                             });
                             await context.SaveChangesAsync();
                         }
