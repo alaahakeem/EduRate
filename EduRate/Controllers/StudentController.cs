@@ -71,12 +71,14 @@ namespace EduRate.Controllers
             var student = await _context.Students.FindAsync(studentId);
             if (student == null) return NotFound("Student not found.");
 
-            student.Name = dto.Name;
-            // student.ParentPhoneNumber = dto.ParentPhoneNumber;
-            // student.EducationalStage = dto.EducationalStage;
+            if (!string.IsNullOrWhiteSpace(dto.Name)) student.Name = dto.Name;
+            if (!string.IsNullOrWhiteSpace(dto.Governorate)) student.Governorate = dto.Governorate;
+            if (!string.IsNullOrWhiteSpace(dto.Region)) student.Region = dto.Region;
+            if (!string.IsNullOrWhiteSpace(dto.ParentPhoneNumber)) student.ParentPhoneNumber = dto.ParentPhoneNumber;
+            if (dto.EducationalStage.HasValue) student.EducationalStage = dto.EducationalStage.Value;
 
             await _context.SaveChangesAsync();
-            return Ok("Profile updated successfully.");
+            return Ok(new { message = "Profile updated successfully." });
         }
 
         // ==========================================

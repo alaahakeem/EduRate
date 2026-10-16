@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { Search, MapPin, Calendar, Clock, BookOpen, Loader2, CheckCircle, GraduationCap, DollarSign, Tag, X, Sparkles, AlertCircle } from 'lucide-react';
+import { Search, MapPin, Filter, Calendar, Clock, BookOpen, Loader2, CheckCircle, GraduationCap, DollarSign, Tag, X, Sparkles, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -12,6 +12,11 @@ export default function ExploreClasses() {
   const navigate = useNavigate();
 
   const [sessions, setSessions] = useState<any[]>([]);
+  const [studentStage, setStudentStage] = useState<string | null>(null);
+  const [studentStageLabel, setStudentStageLabel] = useState<string>('');
+  const [filterMode, setFilterMode] = useState<'myStage' | 'all'>('myStage');
+  const [searchTerm, setSearchTerm] = useState('');
+
   const [isLoading, setIsLoading] = useState(true);
   const [bookingId, setBookingId] = useState<number | null>(null);
   
@@ -26,23 +31,87 @@ export default function ExploreClasses() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
+
   useEffect(() => {
-    const fetchSessions = async () => {
+    const fetchInitialData = async () => {
       try {
-        const res = await api.get('/sessions');
-        const validSessions = (res.data || []).filter((s: any) => {
-          const isFuture = new Date(s.startTime) > new Date();
-          return s.status === 'Available' && isFuture;
-        });
-        setSessions(validSessions);
+        const [sessionsRes, profileRes] = await Promise.allSettled([
+          api.get('/sessions'),
+          api.get('/student/my-profile')
+        ]);
+
+        if (sessionsRes.status === 'fulfilled') {
+          const validSessions = (sessionsRes.value.data || []).filter((s: any) => {
+            const isFuture = new Date(s.startTime) > new Date();
+            return s.status === 'Available' && isFuture;
+          });
+          setSessions(validSessions);
+        }
+
+        if (profileRes.status === 'fulfilled' && profileRes.value.data) {
+          const stageVal = profileRes.value.data.educationalStage;
+          if (stageVal) {
+            setStudentStage(String(stageVal));
+            const stageMapping: Record<string, string> = {
+              '1': 'الصف الأول الابتدائي', 'Primary1': 'الصف الأول الابتدائي',
+              '2': 'الصف الثاني الابتدائي', 'Primary2': 'الصف الثاني الابتدائي',
+              '3': 'الصف الثالث الابتدائي', 'Primary3': 'الصف الثالث الابتدائي',
+              '4': 'الصف الرابع الابتدائي', 'Primary4': 'الصف الرابع الابتدائي',
+              '5': 'الصف الخامس الابتدائي', 'Primary5': 'الصف الخامس الابتدائي',
+              '6': 'الصف السادس الابتدائي', 'Primary6': 'الصف السادس الابتدائي',
+              '7': 'الصف الأول الإعدادي', 'Prep1': 'الصف الأول الإعدادي',
+              '8': 'الصف الثاني الإعدادي', 'Prep2': 'الصف الثاني الإعدادي',
+              '9': 'الصف الثالث الإعدادي', 'Prep3': 'الصف الثالث الإعدادي',
+              '10': 'الصف الأول الثانوي', 'Sec1': 'الصف الأول الثانوي',
+              '11': 'الصف الثاني الثانوي', 'Sec2': 'الصف الثاني الثانوي',
+              '12': 'الصف الثالث الثانوي', 'Sec3': 'الصف الثالث الثانوي',
+            };
+            setStudentStageLabel(stageMapping[String(stageVal)] || String(stageVal));
+          }
+        }
       } catch (err) {
         console.error("Error fetching sessions", err);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchSessions();
+    fetchInitialData();
   }, []);
+
+  const getStageKeywords = (stage: string | null) => {
+    if (!stage) return [];
+    const s = stage.toLowerCase();
+    if (s.includes('sec3') || s === '12' || (s.includes('ثالث') && s.includes('ثانو'))) return ['sec3', 'secondary - 3', 'الصف الثالث الثانوي', 'ثانوي', 'secondary'];
+    if (s.includes('sec2') || s === '11' || (s.includes('ثاني') && s.includes('ثانو'))) return ['sec2', 'secondary - 2', 'الصف الثاني الثانوي', 'ثانوي', 'secondary'];
+    if (s.includes('sec1') || s === '10' || (s.includes('أول') && s.includes('ثانو'))) return ['sec1', 'secondary - 1', 'الصف الأول الثانوي', 'ثانوي', 'secondary'];
+    if (s.includes('prep3') || s === '9' || (s.includes('ثالث') && s.includes('إعداد'))) return ['prep3', 'preparatory - 3', 'الصف الثالث الإعدادي', 'إعدادي', 'preparatory'];
+    if (s.includes('prep2') || s === '8' || (s.includes('ثاني') && s.includes('إعداد'))) return ['prep2', 'preparatory - 2', 'الصف الثاني الإعدادي', 'إعدادي', 'preparatory'];
+    if (s.includes('prep1') || s === '7' || (s.includes('أول') && s.includes('إعداد'))) return ['prep1', 'preparatory - 1', 'الصف الأول الإعدادي', 'إعدادي', 'preparatory'];
+    if (s.includes('prep') || s.includes('إعداد')) return ['prep', 'preparatory', 'إعدادي'];
+    if (s.includes('primary') || s.includes('ابتدائ')) return ['primary', 'ابتدائي'];
+    return [s];
+  };
+
+  const stageKeywords = getStageKeywords(studentStage);
+
+  const filteredSessions = sessions.filter(session => {
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      const matchTitle = session.title?.toLowerCase().includes(term);
+      const matchTeacher = session.teacherName?.toLowerCase().includes(term);
+      const matchCenter = session.centerName?.toLowerCase().includes(term);
+      const matchStage = session.educationalStage?.toLowerCase().includes(term);
+      if (!matchTitle && !matchTeacher && !matchCenter && !matchStage) return false;
+    }
+
+    if (filterMode === 'myStage' && studentStage && stageKeywords.length > 0) {
+      const sessStage = (session.educationalStage || '').toLowerCase();
+      return stageKeywords.some(kw => sessStage.includes(kw));
+    }
+
+    return true;
+  });
+
 
   const openBookingModal = (session: any) => {
     if (userType !== 'Student') {
@@ -150,15 +219,66 @@ export default function ExploreClasses() {
           </div>
         )}
 
-        {/* Classes Grid */}
+        
+        {/* Stage Filter Tabs & Search Bar */}
+        <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+          
+          {/* Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+            {studentStage && (
+              <button
+                type="button"
+                onClick={() => setFilterMode('myStage')}
+                className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm ${
+                  filterMode === 'myStage'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-indigo-200'
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>{dir === 'rtl' ? `حصص مرحلتي: ${studentStageLabel || 'المسجلة'}` : `My Stage: ${studentStageLabel || 'Saved'}`}</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setFilterMode('all')}
+              className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm ${
+                filterMode === 'all'
+                  ? 'bg-indigo-600 text-white shadow-indigo-200'
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <GraduationCap className="w-4 h-4" />
+              <span>{dir === 'rtl' ? `كل المراحل الدراسية (${sessions.length})` : `All Stages (${sessions.length})`}</span>
+            </button>
+          </div>
+
+          {/* Search Box */}
+          <div className="relative min-w-[240px]">
+            <Search className={`w-4 h-4 text-slate-400 absolute top-1/2 -translate-y-1/2 ${dir === 'rtl' ? 'right-3.5' : 'left-3.5'}`} />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder={dir === 'rtl' ? 'ابحث بالمادة، المدرس، أو السنتر...' : 'Search by subject, teacher, center...'}
+              className={`w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${
+                dir === 'rtl' ? 'pr-10 pl-3' : 'pl-10 pr-3'
+              }`}
+            />
+          </div>
+
+        </div>
+
+{/* Classes Grid */}
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
             <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sessions.length > 0 ? (
-              sessions.map((session) => (
+            {filteredSessions.length > 0 ? (
+              filteredSessions.map((session) => (
                 <div key={session.id} className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:border-indigo-200 hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col group relative overflow-hidden">
                   
                   {/* Decorative element */}

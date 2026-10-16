@@ -1,9 +1,26 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { Settings, Loader2, Save, User, MapPin, Camera } from 'lucide-react';
+import { Settings, Loader2, Save, User, MapPin, Camera, GraduationCap } from 'lucide-react';
+import CustomSelect from '../components/CustomSelect';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
+
+
+export const STAGES_OPTIONS = [
+  { value: '1', labelAr: 'الصف الأول الابتدائي', labelEn: 'Primary 1', enumName: 'Primary1' },
+  { value: '2', labelAr: 'الصف الثاني الابتدائي', labelEn: 'Primary 2', enumName: 'Primary2' },
+  { value: '3', labelAr: 'الصف الثالث الابتدائي', labelEn: 'Primary 3', enumName: 'Primary3' },
+  { value: '4', labelAr: 'الصف الرابع الابتدائي', labelEn: 'Primary 4', enumName: 'Primary4' },
+  { value: '5', labelAr: 'الصف الخامس الابتدائي', labelEn: 'Primary 5', enumName: 'Primary5' },
+  { value: '6', labelAr: 'الصف السادس الابتدائي', labelEn: 'Primary 6', enumName: 'Primary6' },
+  { value: '7', labelAr: 'الصف الأول الإعدادي', labelEn: 'Middle 1', enumName: 'Prep1' },
+  { value: '8', labelAr: 'الصف الثاني الإعدادي', labelEn: 'Middle 2', enumName: 'Prep2' },
+  { value: '9', labelAr: 'الصف الثالث الإعدادي', labelEn: 'Middle 3', enumName: 'Prep3' },
+  { value: '10', labelAr: 'الصف الأول الثانوي', labelEn: 'High School 1', enumName: 'Sec1' },
+  { value: '11', labelAr: 'الصف الثاني الثانوي', labelEn: 'High School 2', enumName: 'Sec2' },
+  { value: '12', labelAr: 'الصف الثالث الثانوي', labelEn: 'High School 3', enumName: 'Sec3' }
+];
 
 export default function StudentSettings() {
   const { dir } = useLanguage();
@@ -15,7 +32,7 @@ export default function StudentSettings() {
   // Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [educationalStage, setEducationalStage] = useState('Secondary');
+  const [educationalStage, setEducationalStage] = useState('10');
   const [governorate, setGovernorate] = useState('');
   const [region, setRegion] = useState('');
   
@@ -30,7 +47,13 @@ export default function StudentSettings() {
         const data = res.data;
         setName(data.name || '');
         setEmail(data.email || '');
-        setEducationalStage(data.educationalStage || 'Secondary');
+        if (data.educationalStage) {
+          const found = STAGES_OPTIONS.find(s => 
+            s.enumName.toLowerCase() === String(data.educationalStage).toLowerCase() || 
+            s.value === String(data.educationalStage)
+          );
+          if (found) setEducationalStage(found.value);
+        }
         setGovernorate(data.governorate || '');
         setRegion(data.region || '');
       } catch (err) {
@@ -51,7 +74,7 @@ export default function StudentSettings() {
     try {
       await api.put('/student/my-profile', {
         name,
-        educationalStage,
+        educationalStage: parseInt(educationalStage) || 10,
         governorate,
         region
       });
@@ -59,7 +82,13 @@ export default function StudentSettings() {
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err: any) {
       console.error("Failed to update profile", err);
-      setErrorMsg(err.response?.data?.title || err.response?.data || (dir === 'rtl' ? 'حدث خطأ أثناء التحديث' : 'Error updating profile'));
+      const errData = err.response?.data;
+      if (errData?.errors) {
+        const errorList = Object.values(errData.errors).flat().join(' | ');
+        setErrorMsg(errorList);
+      } else {
+        setErrorMsg(errData?.message || errData?.title || errData || (dir === 'rtl' ? 'حدث خطأ أثناء التحديث' : 'Error updating profile'));
+      }
     } finally {
       setIsSaving(false);
     }
@@ -197,7 +226,26 @@ export default function StudentSettings() {
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-slate-100 flex justify-end">
+                
+                {/* Educational Stage */}
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                    <GraduationCap className="w-4 h-4 text-purple-600" />
+                    {dir === 'rtl' ? 'المرحلة الدراسية' : 'Educational Stage'}
+                  </label>
+                  <CustomSelect
+                    dir={dir}
+                    value={educationalStage}
+                    onChange={setEducationalStage}
+                    icon={<GraduationCap className="h-4 w-4 text-purple-500" />}
+                    options={STAGES_OPTIONS.map(s => ({
+                      value: s.value,
+                      label: dir === 'rtl' ? s.labelAr : s.labelEn
+                    }))}
+                  />
+                </div>
+
+<div className="pt-6 border-t border-slate-100 flex justify-end">
                   <button 
                     type="submit" 
                     disabled={isSaving}

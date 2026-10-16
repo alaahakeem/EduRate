@@ -19,9 +19,11 @@ namespace EduRate.DTOs
 
     public class UpdateStudentProfileDto
     {
-        public string Name { get; set; }
-        public string ParentPhoneNumber { get; set; }
-        public EducationalStage EducationalStage { get; set; }
+        public string? Name { get; set; }
+        public string? ParentPhoneNumber { get; set; }
+        public string? Governorate { get; set; }
+        public string? Region { get; set; }
+        public EducationalStage? EducationalStage { get; set; }
     }
 
     // === 2. Location DTO ===
