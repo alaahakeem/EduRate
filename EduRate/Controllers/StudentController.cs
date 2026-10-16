@@ -55,7 +55,7 @@ namespace EduRate.Controllers
                 EducationalStage = student.EducationalStage.ToString(),
                 Governorate = student.Governorate,
                 Region = student.Region,
-                // ParentPhoneNumber = student.ParentPhoneNumber, // تأكدي إن الخاصية دي موجودة في جدول الطلاب
+                ParentPhoneNumber = student.ParentPhoneNumber,
                 WalletBalance = student.WalletBalance,
                 RewardPoints = student.RewardPoints
             };

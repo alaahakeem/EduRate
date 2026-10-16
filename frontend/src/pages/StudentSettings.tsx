@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { Settings, Loader2, Save, User, MapPin, Camera, GraduationCap, Phone } from 'lucide-react';
+import { Settings, Loader2, Save, User, MapPin, Camera, GraduationCap, Phone, ChevronDown } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -35,7 +35,7 @@ export default function StudentSettings() {
   const [educationalStage, setEducationalStage] = useState('10');
   const [governorate, setGovernorate] = useState('');
   const [region, setRegion] = useState('');
-  const [parentPhoneNumber, setParentPhoneNumber] = useState('');
+  const [parentPhoneNumber, setParentPhoneNumber] = useState(() => localStorage.getItem('student_parent_phone') || '');
   
   // Custom alerts state
   const [successMsg, setSuccessMsg] = useState('');
@@ -57,7 +57,13 @@ export default function StudentSettings() {
         }
         setGovernorate(data.governorate || '');
         setRegion(data.region || '');
-        setParentPhoneNumber(data.parentPhoneNumber || '');
+        if (data.parentPhoneNumber) {
+          setParentPhoneNumber(data.parentPhoneNumber);
+          localStorage.setItem('student_parent_phone', data.parentPhoneNumber);
+        } else {
+          const cached = localStorage.getItem('student_parent_phone');
+          if (cached) setParentPhoneNumber(cached);
+        }
       } catch (err) {
         console.error("Error fetching student profile", err);
       } finally {
@@ -74,6 +80,9 @@ export default function StudentSettings() {
     setIsSaving(true);
     
     try {
+      if (parentPhoneNumber) {
+        localStorage.setItem('student_parent_phone', parentPhoneNumber);
+      }
       await api.put('/student/my-profile', {
         name,
         educationalStage: parseInt(educationalStage) || 10,
@@ -237,16 +246,22 @@ export default function StudentSettings() {
                       <GraduationCap className="w-4 h-4 text-purple-600" />
                       {dir === 'rtl' ? 'المرحلة الدراسية' : 'Educational Stage'}
                     </label>
-                    <CustomSelect
-                      dir={dir}
-                      value={educationalStage}
-                      onChange={setEducationalStage}
-                      icon={<GraduationCap className="h-4 w-4 text-purple-500" />}
-                      options={STAGES_OPTIONS.map(s => ({
-                        value: s.value,
-                        label: dir === 'rtl' ? s.labelAr : s.labelEn
-                      }))}
-                    />
+                    <div className="relative">
+                      <select
+                        value={educationalStage}
+                        onChange={e => setEducationalStage(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none cursor-pointer"
+                      >
+                        {STAGES_OPTIONS.map(s => (
+                          <option key={s.value} value={s.value}>
+                            {dir === 'rtl' ? s.labelAr : s.labelEn}
+                          </option>
+                        ))}
+                      </select>
+                      <div className={`absolute ${dir === 'rtl' ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 pointer-events-none text-slate-400`}>
+                        <ChevronDown className="w-4 h-4" />
+                      </div>
+                    </div>
                   </div>
 
                   {/* Parent Phone Number */}
