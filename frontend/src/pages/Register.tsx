@@ -96,29 +96,29 @@ export default function Register() {
   };
 
   return (
-    <div dir={dir} className="min-h-screen flex items-center justify-center relative overflow-hidden font-sans transition-all bg-slate-50 py-12">
+    <div dir={dir} className="min-h-screen flex items-center justify-center relative overflow-hidden font-sans transition-all bg-gradient-to-br from-slate-950 via-teal-950 to-slate-950 py-12 p-4 sm:p-6">
       
-      <div className="absolute inset-0 z-0 fixed">
-        <img 
-          src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2000&auto=format&fit=crop" 
-          alt="Majestic Library" 
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-white/30 backdrop-blur-[2px]"></div>
-      </div>
+      {/* Dynamic Animated Ambient Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-emerald-500/20 rounded-full blur-[130px] pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-teal-500/20 rounded-full blur-[140px] pointer-events-none"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[160px] pointer-events-none"></div>
 
+      {/* Modern Subtle Geometric Grid Pattern */}
+      <div className="absolute inset-0 bg-[radial-gradient(#ffffff18_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none"></div>
+
+      {/* Fixed Language Switcher */}
       <div className={`fixed top-6 ${dir === 'rtl' ? 'left-6' : 'right-6'} z-50`}>
         <button 
           onClick={toggleLanguage} 
-          className="flex items-center px-4 py-2 bg-white/70 hover:bg-white text-slate-800 rounded-xl text-sm font-bold transition-all shadow-sm border border-white/50 backdrop-blur-md"
+          className="flex items-center px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-bold transition-all shadow-sm border border-white/20 backdrop-blur-md"
         >
-          <Globe className={`w-4 h-4 ${dir === 'rtl' ? 'ml-2' : 'mr-2'} text-emerald-600`} />
+          <Globe className={`w-4 h-4 ${dir === 'rtl' ? 'ml-2' : 'mr-2'} text-emerald-400`} />
           {t('switch_lang')}
         </button>
       </div>
 
-      <div className="relative z-10 w-full max-w-md px-6">
-        <div className="bg-white/70 backdrop-blur-xl border border-white shadow-2xl p-8 sm:p-10 rounded-[2rem]">
+      <div className="relative z-10 w-full max-w-md px-2 sm:px-0">
+        <div className="bg-white/95 backdrop-blur-2xl border border-white/60 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] p-8 sm:p-10 rounded-[2.5rem]">
           
           <div className="text-center mb-8">
             <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600 mb-2 tracking-tight">EduRate.</h1>

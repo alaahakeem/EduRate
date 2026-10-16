@@ -64,33 +64,51 @@ export default function Login() {
   };
 
   return (
-    <div dir={dir} className="min-h-screen flex items-center justify-center relative overflow-hidden font-sans transition-all bg-slate-50">
+    <div dir={dir} className="min-h-screen flex items-center justify-center relative overflow-hidden font-sans transition-all bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 p-4 sm:p-6">
       
-      {/* Majestic Library Background Image (Bright & Clear) */}
-      <div className="absolute inset-0 z-0">
-        <img 
-          src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2000&auto=format&fit=crop" 
-          alt="Majestic Library" 
-          className="w-full h-full object-cover"
-        />
-        {/* Very light glass overlay to make the background pop while keeping the text readable */}
-        <div className="absolute inset-0 bg-white/30 backdrop-blur-[2px]"></div>
+      {/* Dynamic Animated Ambient Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/25 rounded-full blur-[130px] pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-500/25 rounded-full blur-[140px] pointer-events-none"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[160px] pointer-events-none"></div>
+
+      {/* Modern Subtle Geometric Grid Pattern */}
+      <div className="absolute inset-0 bg-[radial-gradient(#ffffff18_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none"></div>
+
+      {/* Floating Decorative Badges (Desktop) */}
+      <div className="hidden lg:flex items-center gap-3 absolute top-24 left-16 bg-white/10 backdrop-blur-xl border border-white/20 px-5 py-3 rounded-2xl shadow-xl text-white">
+        <div className="w-10 h-10 rounded-xl bg-amber-400/20 flex items-center justify-center text-amber-300">
+          <Sparkles className="w-5 h-5" />
+        </div>
+        <div>
+          <p className="text-xs text-indigo-200 font-medium">{dir === 'rtl' ? 'تقييمات موثوقة' : 'Verified Ratings'}</p>
+          <p className="text-sm font-bold">4.9 / 5.0 ⭐⭐⭐⭐⭐</p>
+        </div>
+      </div>
+
+      <div className="hidden lg:flex items-center gap-3 absolute bottom-24 right-16 bg-white/10 backdrop-blur-xl border border-white/20 px-5 py-3 rounded-2xl shadow-xl text-white">
+        <div className="w-10 h-10 rounded-xl bg-emerald-400/20 flex items-center justify-center text-emerald-300">
+          <CheckCircle2 className="w-5 h-5" />
+        </div>
+        <div>
+          <p className="text-xs text-purple-200 font-medium">{dir === 'rtl' ? 'معتمد ومضمون' : 'Certified Platform'}</p>
+          <p className="text-sm font-bold">{dir === 'rtl' ? '+50,000 طالب ومعلم' : '50,000+ Students & Teachers'}</p>
+        </div>
       </div>
 
       {/* Absolute Language Switcher */}
       <div className={`absolute top-6 ${dir === 'rtl' ? 'left-6' : 'right-6'} z-50`}>
         <button 
           onClick={toggleLanguage} 
-          className="flex items-center px-4 py-2 bg-white/70 hover:bg-white text-slate-800 rounded-xl text-sm font-bold transition-all shadow-sm border border-white/50 backdrop-blur-md"
+          className="flex items-center px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-bold transition-all shadow-sm border border-white/20 backdrop-blur-md"
         >
-          <Globe className={`w-4 h-4 ${dir === 'rtl' ? 'ml-2' : 'mr-2'} text-indigo-600`} />
+          <Globe className={`w-4 h-4 ${dir === 'rtl' ? 'ml-2' : 'mr-2'} text-indigo-400`} />
           {t('switch_lang')}
         </button>
       </div>
 
-      {/* Floating Light Glass Card */}
-      <div className="relative z-10 w-full max-w-md px-6">
-        <div className="bg-white/70 backdrop-blur-xl border border-white shadow-2xl p-8 sm:p-10 rounded-[2rem]">
+      {/* Floating Glass Card */}
+      <div className="relative z-10 w-full max-w-md px-2 sm:px-0">
+        <div className="bg-white/95 backdrop-blur-2xl border border-white/60 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] p-8 sm:p-10 rounded-[2.5rem]">
           
           <div className="text-center mb-8">
             <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 to-purple-700 mb-2 tracking-tight">EduRate.</h1>
