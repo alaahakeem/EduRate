@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { Settings, Loader2, Save, User, MapPin, Camera, GraduationCap } from 'lucide-react';
+import { Settings, Loader2, Save, User, MapPin, Camera, GraduationCap, Phone } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -35,6 +35,7 @@ export default function StudentSettings() {
   const [educationalStage, setEducationalStage] = useState('10');
   const [governorate, setGovernorate] = useState('');
   const [region, setRegion] = useState('');
+  const [parentPhoneNumber, setParentPhoneNumber] = useState('');
   
   // Custom alerts state
   const [successMsg, setSuccessMsg] = useState('');
@@ -56,6 +57,7 @@ export default function StudentSettings() {
         }
         setGovernorate(data.governorate || '');
         setRegion(data.region || '');
+        setParentPhoneNumber(data.parentPhoneNumber || '');
       } catch (err) {
         console.error("Error fetching student profile", err);
       } finally {
@@ -76,7 +78,8 @@ export default function StudentSettings() {
         name,
         educationalStage: parseInt(educationalStage) || 10,
         governorate,
-        region
+        region,
+        parentPhoneNumber: parentPhoneNumber || '01000000000'
       });
       setSuccessMsg(dir === 'rtl' ? 'تم تحديث الملف الشخصي بنجاح!' : 'Profile updated successfully!');
       setTimeout(() => setSuccessMsg(''), 4000);
@@ -227,22 +230,39 @@ export default function StudentSettings() {
                 </div>
 
                 
-                {/* Educational Stage */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                    <GraduationCap className="w-4 h-4 text-purple-600" />
-                    {dir === 'rtl' ? 'المرحلة الدراسية' : 'Educational Stage'}
-                  </label>
-                  <CustomSelect
-                    dir={dir}
-                    value={educationalStage}
-                    onChange={setEducationalStage}
-                    icon={<GraduationCap className="h-4 w-4 text-purple-500" />}
-                    options={STAGES_OPTIONS.map(s => ({
-                      value: s.value,
-                      label: dir === 'rtl' ? s.labelAr : s.labelEn
-                    }))}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Educational Stage */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                      <GraduationCap className="w-4 h-4 text-purple-600" />
+                      {dir === 'rtl' ? 'المرحلة الدراسية' : 'Educational Stage'}
+                    </label>
+                    <CustomSelect
+                      dir={dir}
+                      value={educationalStage}
+                      onChange={setEducationalStage}
+                      icon={<GraduationCap className="h-4 w-4 text-purple-500" />}
+                      options={STAGES_OPTIONS.map(s => ({
+                        value: s.value,
+                        label: dir === 'rtl' ? s.labelAr : s.labelEn
+                      }))}
+                    />
+                  </div>
+
+                  {/* Parent Phone Number */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                      <Phone className="w-4 h-4 text-indigo-500" />
+                      {dir === 'rtl' ? 'رقم هاتف ولي الأمر' : 'Parent Phone Number'}
+                    </label>
+                    <input 
+                      type="tel"
+                      value={parentPhoneNumber}
+                      onChange={e => setParentPhoneNumber(e.target.value)}
+                      placeholder={dir === 'rtl' ? 'مثال: 01012345678' : 'e.g. 01012345678'}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
+                    />
+                  </div>
                 </div>
 
 <div className="pt-6 border-t border-slate-100 flex justify-end">
