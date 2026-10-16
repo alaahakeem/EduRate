@@ -78,21 +78,66 @@ export default function ExploreClasses() {
     fetchInitialData();
   }, []);
 
-  const getStageKeywords = (stage: string | null) => {
-    if (!stage) return [];
-    const s = stage.toLowerCase();
-    if (s.includes('sec3') || s === '12' || (s.includes('ثالث') && s.includes('ثانو'))) return ['sec3', 'secondary - 3', 'الصف الثالث الثانوي', 'ثانوي', 'secondary'];
-    if (s.includes('sec2') || s === '11' || (s.includes('ثاني') && s.includes('ثانو'))) return ['sec2', 'secondary - 2', 'الصف الثاني الثانوي', 'ثانوي', 'secondary'];
-    if (s.includes('sec1') || s === '10' || (s.includes('أول') && s.includes('ثانو'))) return ['sec1', 'secondary - 1', 'الصف الأول الثانوي', 'ثانوي', 'secondary'];
-    if (s.includes('prep3') || s === '9' || (s.includes('ثالث') && s.includes('إعداد'))) return ['prep3', 'preparatory - 3', 'الصف الثالث الإعدادي', 'إعدادي', 'preparatory'];
-    if (s.includes('prep2') || s === '8' || (s.includes('ثاني') && s.includes('إعداد'))) return ['prep2', 'preparatory - 2', 'الصف الثاني الإعدادي', 'إعدادي', 'preparatory'];
-    if (s.includes('prep1') || s === '7' || (s.includes('أول') && s.includes('إعداد'))) return ['prep1', 'preparatory - 1', 'الصف الأول الإعدادي', 'إعدادي', 'preparatory'];
-    if (s.includes('prep') || s.includes('إعداد')) return ['prep', 'preparatory', 'إعدادي'];
-    if (s.includes('primary') || s.includes('ابتدائ')) return ['primary', 'ابتدائي'];
-    return [s];
+  const resolveGradeCode = (raw: string | null | undefined): string | null => {
+    if (!raw) return null;
+    const s = raw.toLowerCase().trim();
+
+    // 1. Exact numbers or enums
+    if (s === '1' || s.includes('primary1')) return 'P1';
+    if (s === '2' || s.includes('primary2')) return 'P2';
+    if (s === '3' || s.includes('primary3')) return 'P3';
+    if (s === '4' || s.includes('primary4')) return 'P4';
+    if (s === '5' || s.includes('primary5')) return 'P5';
+    if (s === '6' || s.includes('primary6')) return 'P6';
+
+    if (s === '7' || s.includes('prep1') || s.includes('preparatory - 1') || s.includes('preparatory 1')) return 'PREP1';
+    if (s === '8' || s.includes('prep2') || s.includes('preparatory - 2') || s.includes('preparatory 2')) return 'PREP2';
+    if (s === '9' || s.includes('prep3') || s.includes('preparatory - 3') || s.includes('preparatory 3')) return 'PREP3';
+
+    if (s === '10' || s.includes('sec1') || s.includes('secondary - 1') || s.includes('secondary 1')) return 'SEC1';
+    if (s === '11' || s.includes('sec2') || s.includes('secondary - 2') || s.includes('secondary 2')) return 'SEC2';
+    if (s === '12' || s.includes('sec3') || s.includes('secondary - 3') || s.includes('secondary 3')) return 'SEC3';
+
+    // 2. Arabic keywords
+    const isPrep = s.includes('إعداد') || s.includes('اعداد') || s.includes('prep');
+    const isSec = s.includes('ثانو') || s.includes('sec');
+    const isPrimary = s.includes('ابتدائ') || s.includes('primary');
+
+    const isFirst = s.includes('أول') || s.includes('اول') || s.includes('1');
+    const isSecond = s.includes('ثان') || s.includes('تان') || s.includes('2');
+    const isThird = s.includes('ثالث') || s.includes('تالت') || s.includes('3');
+    const isFourth = s.includes('رابع') || s.includes('4');
+    const isFifth = s.includes('خامس') || s.includes('5');
+    const isSixth = s.includes('سادس') || s.includes('سات') || s.includes('6');
+
+    if (isPrep) {
+      if (isFirst) return 'PREP1';
+      if (isSecond) return 'PREP2';
+      if (isThird) return 'PREP3';
+      return 'PREP';
+    }
+
+    if (isSec) {
+      if (isFirst) return 'SEC1';
+      if (isSecond) return 'SEC2';
+      if (isThird) return 'SEC3';
+      return 'SEC';
+    }
+
+    if (isPrimary) {
+      if (isFirst) return 'P1';
+      if (isSecond) return 'P2';
+      if (isThird) return 'P3';
+      if (isFourth) return 'P4';
+      if (isFifth) return 'P5';
+      if (isSixth) return 'P6';
+      return 'P';
+    }
+
+    return null;
   };
 
-  const stageKeywords = getStageKeywords(studentStage);
+  const studentGradeCode = resolveGradeCode(studentStage);
 
   const filteredSessions = sessions.filter(session => {
     if (searchTerm.trim()) {
@@ -104,9 +149,9 @@ export default function ExploreClasses() {
       if (!matchTitle && !matchTeacher && !matchCenter && !matchStage) return false;
     }
 
-    if (filterMode === 'myStage' && studentStage && stageKeywords.length > 0) {
-      const sessStage = (session.educationalStage || '').toLowerCase();
-      return stageKeywords.some(kw => sessStage.includes(kw));
+    if (filterMode === 'myStage' && studentGradeCode) {
+      const sessCode = resolveGradeCode(session.educationalStage);
+      return sessCode === studentGradeCode;
     }
 
     return true;
